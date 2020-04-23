@@ -1,0 +1,20 @@
+[package]
+name = "rmq_slack_monitor"
+version = "0.1.0"
+authors = ["Rostislav Raykov <z@zbrox.org>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = "1.0.106"
+serde_derive = "1.0.106"
+serde_json = "1.0.51"
+toml = "0.5.6"
+structopt = "0.3.13"
+quicli = "0.4.0"
+human-panic = "1.0.3"
+anyhow = "1.0.28"
+env_logger = "0.7.1"
+reqwest= { version = "0.10.4", features = ["blocking", "json"] }
+async-std = "1.5.0"

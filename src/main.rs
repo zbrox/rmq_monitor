@@ -125,12 +125,11 @@ fn main() -> Result<()> {
                 r
             })
             .collect();
-
-        let general_triggers_msgs: Vec<api::SlackMsg> = config.triggers.iter()
-            .filter(|t| t.data().queue.is_none())
+        let msgs: Vec<api::SlackMsg> = config.triggers.iter()
             .map(|t| {
                 let msgs: Vec<api::SlackMsg> = queue_info_flat.iter()
-                    .filter(|(_, _, stat)| stat.name == t.field_name() && stat.value > t.data().threshold)
+                    .filter(|(queue_name, _, stat)| check_trigger_applicability(t, queue_name, stat))
+                    .filter(|(_, _, stat)| stat.value > t.data().threshold)
                     .map(|(queue_name, _, stat)| {
                         api::SlackMsg {
                             username: config.slack.screen_name.clone(),
@@ -151,17 +150,14 @@ fn main() -> Result<()> {
             .flat_map(|msgs| msgs)
             .collect();
 
-        general_triggers_msgs.iter()
+        msgs.iter()
             .map(|msg| {
-                log::info!(
-                    "Sending message to #{}",
-                    &config.slack.channel,
-                );
+                log::info!("Sending message to #{}", &config.slack.channel,);
                 api::send_slack_msg(&config.slack.webhook_url, msg)
             })
             .for_each(|v| {
                 match v {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(e) => log::error!("Error sending Slack message: {}", e),
                 };
             });
@@ -174,4 +170,12 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn check_trigger_applicability(trigger: &Trigger, queue_name: &str, stat: &api::QueueStat) -> bool {
+    if let Some(trigger_queue_name) = &trigger.data().queue {
+        return trigger_queue_name == queue_name && trigger.field_name() == stat.name;
+    } else {
+        return trigger.field_name() == stat.name;
+    }
 }

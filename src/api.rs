@@ -4,13 +4,14 @@ use anyhow::{anyhow, Context, Result};
 
 #[derive(Deserialize, Debug)]
 pub struct QueuesInfo {
-    pub consumers: u64,
-    pub memory: u64,
-    pub messages: u64,
-    pub messages_ready: u64,
-    pub messages_unacknowledged: u64,
     pub name: String,
     pub state: String,
+    pub stats: Vec<QueueStat>,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct QueueStat {
+    pub name: String,
+    pub value: u64,
 }
 
 #[derive(Serialize, Debug)]
@@ -71,9 +72,33 @@ pub fn get_queue_info(protocol: &str, host: &str, port: &str, username: &str, pa
         return Err(anyhow!("RabbitMQ API Error: HTTP {}", response.status()));
     }
 
-    let body: Vec<QueuesInfo> = response.json().context("Error parsing queues info API response")?;
+    let mut json: serde_json::Value = response.json().context("Error parsing queues info API response")?;
+    preprocess_queues_info_json(&mut json);
 
-    Ok(body)
+    let queue_info: Vec<QueuesInfo> = serde_json::from_value(json).context("Error parsing queues info API response")?;
+
+    Ok(queue_info)
+}
+
+fn preprocess_queues_info_json(json: &mut serde_json::Value) {
+    let list = match json.as_array_mut() {
+        Some(list) => list,
+        None => return,
+    };
+
+    for i in list {
+        let object = match i.as_object_mut() {
+            Some(object) => object,
+            None => return,
+        };
+        let mut stats = Vec::new();
+        for k in vec!["consumers", "memory", "messages", "messages_ready", "messages_unacknowledged"] {
+            if object.contains_key(k) {
+                stats.push(serde_json::json!({"name": k, "value": object[k]}))
+            }
+        }
+        object.insert("stats".into(), serde_json::json!(stats));
+    }
 }
 
 pub fn send_slack_msg(webhook_url: &str, msg: &SlackMsg) -> Result<()> {

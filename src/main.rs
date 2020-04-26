@@ -21,7 +21,7 @@ struct Config {
     rabbitmq: RabbitMqConfig,
     settings: MonitorSettings,
     slack: SlackConfig,
-    thresholds: Thresholds,
+    triggers: Vec<Trigger>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -37,7 +37,7 @@ struct RabbitMqConfig {
 #[derive(Deserialize, Debug)]
 struct MonitorSettings {
     poll_seconds: u64,
-    expire_seconds: u64,
+    alert_expire_seconds: u64,
 }
 
 #[derive(Deserialize, Debug)]
@@ -48,8 +48,41 @@ struct SlackConfig {
 }
 
 #[derive(Deserialize, Debug)]
-struct Thresholds {
-    ready: Option<u64>,
+#[serde(tag = "type")]
+enum Trigger {
+    #[serde(rename = "ready_msgs")]
+    ReadyMsgs(TriggerData),
+}
+
+impl Trigger {
+    fn data(&self) -> &TriggerData {
+        match self {
+            Trigger::ReadyMsgs(data) => data,
+        }
+    }
+
+    fn field_name(&self) -> &'static str {
+        match *self {
+            Trigger::ReadyMsgs(_) => "messages_ready",
+        }
+    }
+
+    fn name(&self) -> &'static str {
+        match *self {
+            Trigger::ReadyMsgs(_) => "ready messages",
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+struct TriggerData {
+    threshold: u64,
+    queue: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+enum TriggerType {
+    Ready,
 }
 
 fn main() -> Result<()> {
@@ -73,7 +106,7 @@ fn main() -> Result<()> {
             &config.rabbitmq.host,
             &config.rabbitmq.port
         );
-        let queues_info = api::get_queue_info(
+        let queue_info = api::get_queue_info(
             &config.rabbitmq.protocol,
             &config.rabbitmq.host,
             &config.rabbitmq.port,
@@ -81,36 +114,57 @@ fn main() -> Result<()> {
             &config.rabbitmq.password,
         )?;
 
-        if let Some(threshold_ready) = config.thresholds.ready {
-            let (_, errors): (Vec<_>, Vec<_>) = queues_info.into_iter()
-                .filter(|qi| threshold_ready < qi.messages_ready)
-                .map(|qi| {
-                    api::SlackMsg {
-                        username: config.slack.screen_name.clone(),
-                        channel: format!("#{}", &config.slack.channel),
-                        text: Some(format!("Queue {name} has passed a threshold of {threshold} ready messages. Currently at {number}.", 
-                            name = &qi.name,
-                            threshold = threshold_ready,
-                            number = qi.messages_ready,
-                        )),
-                        icon_url: None,
-                        attachments: None,
-                    }
-                })
-                .map(|msg| {
-                    log::info!(
-                        "Sending message to #{}",
-                        &config.slack.channel,
-                    );
-                    api::send_slack_msg(&config.slack.webhook_url, &msg)
-                })
-                .partition(|r| r.is_ok());
+        let queue_info_flat: Vec<(&str, &str, &api::QueueStat)> = queue_info
+            .iter()
+            .flat_map(|qi| {
+                let r: Vec<(&str, &str, &api::QueueStat)> = qi
+                    .stats
+                    .iter()
+                    .map(|stat| (qi.name.as_str(), qi.state.as_str(), stat))
+                    .collect();
+                r
+            })
+            .collect();
 
-            let errors: Vec<anyhow::Error> = errors.into_iter().map(Result::unwrap_err).collect();
-            errors.iter().for_each(|e| {
-                log::error!("Error sending Slack message: {}", e);
+        let general_triggers_msgs: Vec<api::SlackMsg> = config.triggers.iter()
+            .filter(|t| t.data().queue.is_none())
+            .map(|t| {
+                let msgs: Vec<api::SlackMsg> = queue_info_flat.iter()
+                    .filter(|(_, _, stat)| stat.name == t.field_name() && stat.value > t.data().threshold)
+                    .map(|(queue_name, _, stat)| {
+                        api::SlackMsg {
+                            username: config.slack.screen_name.clone(),
+                            channel: format!("#{}", &config.slack.channel),
+                            text: Some(format!("Queue {name} has passed a threshold of {threshold} {trigger_type}. Currently at {number}.", 
+                                name = &queue_name,
+                                threshold = t.data().threshold,
+                                number = stat.value,
+                                trigger_type = t.name(),
+                            )),
+                            icon_url: None,
+                            attachments: None,
+                        }
+                    })
+                    .collect();
+                return msgs;
+            })
+            .flat_map(|msgs| msgs)
+            .collect();
+
+        general_triggers_msgs.iter()
+            .map(|msg| {
+                log::info!(
+                    "Sending message to #{}",
+                    &config.slack.channel,
+                );
+                api::send_slack_msg(&config.slack.webhook_url, msg)
+            })
+            .for_each(|v| {
+                match v {
+                    Ok(_) => {},
+                    Err(e) => log::error!("Error sending Slack message: {}", e),
+                };
             });
-        }
 
         log::info!(
             "Check passed, sleeping for {}s",

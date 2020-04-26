@@ -1,4 +1,5 @@
-mod api;
+mod rmq;
+mod slack;
 
 use anyhow::Result;
 use human_panic::setup_panic;
@@ -8,6 +9,8 @@ use std::path::PathBuf;
 use std::{thread, time};
 use structopt::StructOpt;
 use toml;
+use slack::{SlackMsg, send_multiple_slack_msgs};
+use rmq::{get_queue_info, QueueStat};
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -106,44 +109,32 @@ fn main() -> Result<()> {
             &config.rabbitmq.host,
             &config.rabbitmq.port
         );
-        let queue_info = api::get_queue_info(
+        let queue_info = get_queue_info(
             &config.rabbitmq.protocol,
             &config.rabbitmq.host,
             &config.rabbitmq.port,
             &config.rabbitmq.username,
             &config.rabbitmq.password,
         )?;
-
-        let queue_info_flat: Vec<(&str, &str, &api::QueueStat)> = queue_info
-            .iter()
-            .flat_map(|qi| {
-                let r: Vec<(&str, &str, &api::QueueStat)> = qi
-                    .stats
-                    .iter()
-                    .map(|stat| (qi.name.as_str(), qi.state.as_str(), stat))
-                    .collect();
-                r
-            })
-            .collect();
         
         let mut active_trigger_registry: Vec<(&str, &str)> = vec![];
-        let msgs: Vec<api::SlackMsg> = config.triggers.iter()
+        let msgs: Vec<SlackMsg> = config.triggers.iter()
             .map(|t| {
-                let msgs: Vec<api::SlackMsg> = queue_info_flat.iter()
-                    .filter(|(queue_name, _, stat)| check_trigger_applicability(t, queue_name, stat))
-                    .filter(|(_, _, stat)| stat.value > t.data().threshold)
-                    .map(|(queue_name, _, stat)| {
-                        if active_trigger_registry.contains(&(queue_name, t.field_name())) {
+                let msgs: Vec<SlackMsg> = queue_info.iter()
+                    .filter(|qi| check_trigger_applicability(t, &qi.name, &qi.stat))
+                    .filter(|qi| qi.stat.value > t.data().threshold)
+                    .map(|qi| {
+                        if active_trigger_registry.contains(&(&qi.name, t.field_name())) {
                             return None;
                         }
-                        active_trigger_registry.push((queue_name, t.field_name()));
-                        Some(api::SlackMsg {
+                        active_trigger_registry.push((&qi.name, t.field_name()));
+                        Some(SlackMsg {
                             username: config.slack.screen_name.clone(),
                             channel: format!("#{}", &config.slack.channel),
                             text: Some(format!("Queue {name} has passed a threshold of {threshold} {trigger_type}. Currently at {number}.", 
-                                name = &queue_name,
+                                name = &qi.name,
                                 threshold = t.data().threshold,
-                                number = stat.value,
+                                number = qi.stat.value,
                                 trigger_type = t.name(),
                             )),
                             icon_url: None,
@@ -157,30 +148,19 @@ fn main() -> Result<()> {
             .flat_map(|msgs| msgs)
             .collect();
 
-        println!("{:?}", msgs);
-        msgs.iter()
-            .map(|msg| {
-                log::info!("Sending message to #{}", &config.slack.channel,);
-                api::send_slack_msg(&config.slack.webhook_url, msg)
-            })
-            .for_each(|v| {
-                match v {
-                    Ok(_) => {}
-                    Err(e) => log::error!("Error sending Slack message: {}", e),
-                };
-            });
-
+        send_multiple_slack_msgs(&config.slack.webhook_url, &msgs)?;
+        
+        active_trigger_registry.clear();
+        
         log::info!(
             "Check passed, sleeping for {}s",
             &config.settings.poll_seconds
         );
         thread::sleep(sleep_time);
     }
-
-    Ok(())
 }
 
-fn check_trigger_applicability(trigger: &Trigger, queue_name: &str, stat: &api::QueueStat) -> bool {
+fn check_trigger_applicability(trigger: &Trigger, queue_name: &str, stat: &QueueStat) -> bool {
     if let Some(trigger_queue_name) = &trigger.data().queue {
         return trigger_queue_name == queue_name && trigger.field_name() == stat.name;
     } else {

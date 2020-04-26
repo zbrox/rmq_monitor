@@ -125,13 +125,19 @@ fn main() -> Result<()> {
                 r
             })
             .collect();
+        
+        let mut active_trigger_registry: Vec<(&str, &str)> = vec![];
         let msgs: Vec<api::SlackMsg> = config.triggers.iter()
             .map(|t| {
                 let msgs: Vec<api::SlackMsg> = queue_info_flat.iter()
                     .filter(|(queue_name, _, stat)| check_trigger_applicability(t, queue_name, stat))
                     .filter(|(_, _, stat)| stat.value > t.data().threshold)
                     .map(|(queue_name, _, stat)| {
-                        api::SlackMsg {
+                        if active_trigger_registry.contains(&(queue_name, t.field_name())) {
+                            return None;
+                        }
+                        active_trigger_registry.push((queue_name, t.field_name()));
+                        Some(api::SlackMsg {
                             username: config.slack.screen_name.clone(),
                             channel: format!("#{}", &config.slack.channel),
                             text: Some(format!("Queue {name} has passed a threshold of {threshold} {trigger_type}. Currently at {number}.", 
@@ -142,14 +148,16 @@ fn main() -> Result<()> {
                             )),
                             icon_url: None,
                             attachments: None,
-                        }
+                        })
                     })
+                    .filter_map(|v| v)
                     .collect();
                 return msgs;
             })
             .flat_map(|msgs| msgs)
             .collect();
 
+        println!("{:?}", msgs);
         msgs.iter()
             .map(|msg| {
                 log::info!("Sending message to #{}", &config.slack.channel,);

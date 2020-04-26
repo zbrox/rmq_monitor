@@ -1,5 +1,5 @@
 [package]
-name = "rmq_slack_monitor"
+name = "rmq_monitor"
 version = "0.1.0"
 authors = ["Rostislav Raykov <z@zbrox.org>"]
 edition = "2018"

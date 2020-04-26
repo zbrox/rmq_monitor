@@ -16,5 +16,6 @@ quicli = "0.4.0"
 human-panic = "1.0.3"
 anyhow = "1.0.28"
 env_logger = "0.7.1"
+log = "0.4.8"
 reqwest= { version = "0.10.4", features = ["blocking", "json"] }
 async-std = "1.5.0"

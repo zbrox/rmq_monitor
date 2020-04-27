@@ -127,6 +127,7 @@ fn main() -> Result<()> {
         "Read config file from {}",
         &args.config_path.to_str().unwrap_or_default()
     );
+    log::debug!("Config loaded: {:?}", config);
 
     let sleep_time = time::Duration::from_secs(config.settings.poll_seconds);
     loop {
@@ -142,6 +143,7 @@ fn main() -> Result<()> {
             &config.rabbitmq.username,
             &config.rabbitmq.password,
         )?;
+        log::debug!("Fetched queue info: {:?}", queue_info);
         
         let mut active_trigger_registry: Vec<(&str, &str)> = vec![];
         let msgs: Vec<SlackMsg> = config.triggers.iter()

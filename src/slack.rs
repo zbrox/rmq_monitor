@@ -67,6 +67,7 @@ pub fn send_slack_msg(webhook_url: &str, msg: &SlackMsg) -> Result<()> {
 pub fn send_multiple_slack_msgs(webhook_url: &str, msgs: &Vec<SlackMsg>) -> Result<()> {
     msgs.iter()
         .map(|msg| {
+            log::debug!("Message body {:?}", msg);
             log::info!("Sending message to {}", msg.channel);
             send_slack_msg(webhook_url, msg)
         })

@@ -7,6 +7,8 @@ pub struct SlackMsg {
     pub username: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon_emoji: Option<String>,
     pub channel: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,

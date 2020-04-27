@@ -48,6 +48,8 @@ struct SlackConfig {
     webhook_url: String,
     channel: String,
     screen_name: String,
+    icon_url: Option<String>,
+    icon_emoji: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -161,7 +163,8 @@ fn main() -> Result<()> {
                                 number = qi.stat.value,
                                 trigger_type = t.name(),
                             )),
-                            icon_url: None,
+                            icon_url: config.slack.icon_url.clone(),
+                            icon_emoji: config.slack.icon_emoji.clone(),
                             attachments: None,
                         })
                     })

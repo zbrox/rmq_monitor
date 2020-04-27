@@ -53,26 +53,50 @@ struct SlackConfig {
 #[derive(Deserialize, Debug)]
 #[serde(tag = "type")]
 enum Trigger {
-    #[serde(rename = "ready_msgs")]
+    #[serde(rename = "consumers_total")]
+    ConsumersTotal(TriggerData),
+    
+    #[serde(rename = "memory_total")]
+    MemoryTotal(TriggerData),
+    
+    #[serde(rename = "messages_total")]
+    MessagesTotal(TriggerData),
+    
+    #[serde(rename = "messages_ready")]
     ReadyMsgs(TriggerData),
+    
+    #[serde(rename = "messages_unacknowledged")]
+    UnacknowledgedMsgs(TriggerData),
 }
 
 impl Trigger {
     fn data(&self) -> &TriggerData {
         match self {
+            Trigger::ConsumersTotal(data) => data,
+            Trigger::MemoryTotal(data) => data,
+            Trigger::MessagesTotal(data) => data,
             Trigger::ReadyMsgs(data) => data,
+            Trigger::UnacknowledgedMsgs(data) => data,
         }
     }
 
     fn field_name(&self) -> &'static str {
         match *self {
+            Trigger::ConsumersTotal(_) => "consumers",
+            Trigger::MemoryTotal(_) => "memory",
+            Trigger::MessagesTotal(_) => "messages",
             Trigger::ReadyMsgs(_) => "messages_ready",
+            Trigger::UnacknowledgedMsgs(_) => "messages_unacknowledged",
         }
     }
 
     fn name(&self) -> &'static str {
         match *self {
+            Trigger::ConsumersTotal(_) => "total number of consumers",
+            Trigger::MemoryTotal(_) => "memory consumption",
+            Trigger::MessagesTotal(_) => "total number of messages",
             Trigger::ReadyMsgs(_) => "ready messages",
+            Trigger::UnacknowledgedMsgs(_) => "unacknowledged messages",
         }
     }
 }

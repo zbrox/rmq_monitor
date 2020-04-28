@@ -36,20 +36,6 @@ pub fn get_queue_info(protocol: &str, host: &str, port: &str, username: &str, pa
     Ok(queue_info)
 }
 
-// fn flatten_queue_info(queue_info: Vec<QueuesInfo>) -> Vec<(String, String, QueueStat)> {
-//     queue_info
-//         .iter()
-//         .flat_map(|qi| {
-//             let r: Vec<(&str, &str, &QueueStat)> = qi
-//                 .stats
-//                 .iter()
-//                 .map(|stat| (qi.name.as_str(), qi.state.as_str(), stat))
-//                 .collect();
-//             r
-//         })
-//         .collect()
-// }
-
 fn preprocess_queues_info_json(json: &mut serde_json::Value) -> Option<serde_json::Value> {
     let list = match json.as_array_mut() {
         Some(list) => list,

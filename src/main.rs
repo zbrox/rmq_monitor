@@ -114,6 +114,9 @@ enum TriggerType {
     Ready,
 }
 
+type QueueName = str;
+type TriggerFieldname = str;
+
 fn main() -> Result<()> {
     setup_panic!();
     let args = Cli::from_args();
@@ -145,7 +148,7 @@ fn main() -> Result<()> {
         )?;
         log::debug!("Fetched queue info: {:?}", queue_info);
         
-        let mut active_trigger_registry: Vec<(&str, &str)> = vec![];
+        let mut active_trigger_registry: Vec<(&QueueName, &TriggerFieldname)> = vec![];
         let msgs: Vec<SlackMsg> = config.triggers.iter()
             .map(|t| {
                 let msgs: Vec<SlackMsg> = queue_info.iter()

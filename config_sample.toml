@@ -8,7 +8,6 @@ vhost="%2f"
 
 [settings]
 poll_seconds=60 # how often to check
-alert_expire_seconds=600 # when does a sent alert expire and thus can be resent again
 
 [slack]
 webhook_url="https://hooks.slack.com/services/xxx/xxxx"

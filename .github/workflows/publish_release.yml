@@ -1,0 +1,88 @@
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+name: Publish
+
+jobs:
+  build:
+    name: Build before publishing
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@master
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            override: true
+      - name: Cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: stable
+          command: build
+          args: --release
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+      - name: Archive binary
+        run: tar cfJ rmq_monitor-${{ matrix.os }}-${{ steps.get_version.outputs.VERSION }}.tar.xz target/release/rmq_monitor
+      - name: Save archived binary as an artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: binary-${{ matrix.os }}-${{ steps.get_version.outputs.VERSION }}
+          path: rmq_monitor-${{ matrix.os }}-${{ steps.get_version.outputs.VERSION }}.tar.xz
+  create_github_release:
+    name: Prepare a GitHub release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+      - name: Download macOS binary archive
+        uses: actions/download-artifact@v1
+        with:
+          name: binary-macOS-latest-${{ steps.get_version.outputs.VERSION }}
+          path: rmq_monitor-macOS-${{ steps.get_version.outputs.VERSION }}.tar.xz
+      - name: Download Linux binary archive
+        uses: actions/download-artifact@v1
+        with:
+          name: binary-ubuntu-latest-${{ steps.get_version.outputs.VERSION }}
+          path: rmq_monitor-ubuntu-${{ steps.get_version.outputs.VERSION }}.tar.xz
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: rmq_monitor v${{ steps.get_version.outputs.VERSION }}
+          files: |
+            LICENSE
+            rmq_monitor-macOS-${{ steps.get_version.outputs.VERSION }}.tar.xz
+            rmq_monitor-ubuntu-${{ steps.get_version.outputs.VERSION }}.tar.xz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  publish_crate:
+    name: Publish rmq_monitor to crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest master
+        uses: actions/checkout@master
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+            toolchain: stable
+            override: true
+      - name: Login to crates.io
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: stable
+          command: login
+          args: ${{ secrets.CRATES_TOKEN }}
+      - name: Publish to crates.io
+        uses: actions-rs/cargo@v1
+        with:
+          toolchain: stable
+          command: publish

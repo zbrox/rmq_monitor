@@ -3,6 +3,14 @@ name = "rmq_monitor"
 version = "0.1.0"
 authors = ["Rostislav Raykov <z@zbrox.org>"]
 edition = "2018"
+description = "A simple tool which monitors RabbitMQ and notifies via Slack (legacy webhooks) when certain thresholds are met"
+repository = "https://github.com/zbrox/rmq_monitor"
+homepage = "https://github.com/zbrox/rmq_monitor"
+keywords = ["rabbitmq", "rmq", "slack", "notification", "alerts"]
+categories = ["command-line-utilities"]
+license = "MIT"
+documentation = "https://github.com/zbrox/rmq_monitor"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -9,14 +9,14 @@ jobs:
     steps:
       - name: Checkout latest
         uses: actions/checkout@master
-      - name: Install stable toolchain
+      - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: stable
+            toolchain: nightly
             override: true
       - name: Cargo build
         uses: actions-rs/cargo@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           command: build
           args: --release

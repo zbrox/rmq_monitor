@@ -15,15 +15,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@master
-      - name: Install stable toolchain
+      - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: stable
+            toolchain: nightly
             override: true
       - name: Cargo build
         uses: actions-rs/cargo@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           command: build
           args: --release
       - name: Get the version
@@ -70,19 +70,19 @@ jobs:
     steps:
       - name: Checkout latest master
         uses: actions/checkout@master
-      - name: Install stable toolchain
+      - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: stable
+            toolchain: nightly
             override: true
       - name: Login to crates.io
         uses: actions-rs/cargo@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           command: login
           args: ${{ secrets.CRATES_TOKEN }}
       - name: Publish to crates.io
         uses: actions-rs/cargo@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           command: publish

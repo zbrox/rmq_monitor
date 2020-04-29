@@ -3,11 +3,11 @@ mod slack;
 
 use anyhow::Result;
 use human_panic::setup_panic;
-use quicli::prelude::*;
 use std::fs;
 use std::path::PathBuf;
 use std::{thread, time};
 use structopt::StructOpt;
+use serde_derive::{Deserialize};
 use toml;
 use slack::{SlackMsg, send_multiple_slack_msgs};
 use rmq::{get_queue_info, QueueStat};

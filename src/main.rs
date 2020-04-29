@@ -40,7 +40,6 @@ struct RabbitMqConfig {
 #[derive(Deserialize, Debug)]
 struct MonitorSettings {
     poll_seconds: u64,
-    alert_expire_seconds: u64,
 }
 
 #[derive(Deserialize, Debug)]

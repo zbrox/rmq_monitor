@@ -1,16 +1,16 @@
 mod rmq;
 mod slack;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use human_panic::setup_panic;
+use rmq::{get_queue_info, QueueStat};
+use serde_derive::Deserialize;
+use slack::{send_multiple_slack_msgs, SlackMsg};
 use std::fs;
 use std::path::PathBuf;
 use std::{thread, time};
 use structopt::StructOpt;
-use serde_derive::{Deserialize};
 use toml;
-use slack::{SlackMsg, send_multiple_slack_msgs};
-use rmq::{get_queue_info, QueueStat};
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -56,16 +56,16 @@ struct SlackConfig {
 enum Trigger {
     #[serde(rename = "consumers_total")]
     ConsumersTotal(TriggerData),
-    
+
     #[serde(rename = "memory_total")]
     MemoryTotal(TriggerData),
-    
+
     #[serde(rename = "messages_total")]
     MessagesTotal(TriggerData),
-    
+
     #[serde(rename = "messages_ready")]
     ReadyMsgs(TriggerData),
-    
+
     #[serde(rename = "messages_unacknowledged")]
     UnacknowledgedMsgs(TriggerData),
 }
@@ -122,8 +122,14 @@ fn main() -> Result<()> {
 
     env_logger::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    let config_str = fs::read_to_string(&args.config_path)?;
-    let config: Config = toml::from_str(&config_str)?;
+    let config_str: String = fs::read_to_string(&args.config_path).with_context(|| {
+        format!(
+            "Could not read config {}",
+            &args.config_path.as_path().display().to_string()
+        )
+    })?;
+
+    let config: Config = toml::from_str(&config_str).context("Could not parse TOML config")?;
 
     log::info!(
         "Read config file from {}",
@@ -146,7 +152,7 @@ fn main() -> Result<()> {
             &config.rabbitmq.password,
         )?;
         log::debug!("Fetched queue info: {:?}", queue_info);
-        
+
         let mut active_trigger_registry: Vec<(&QueueName, &TriggerFieldname)> = vec![];
         let msgs: Vec<SlackMsg> = config.triggers.iter()
             .map(|t| {
@@ -180,9 +186,9 @@ fn main() -> Result<()> {
             .collect();
 
         send_multiple_slack_msgs(&config.slack.webhook_url, &msgs)?;
-        
+
         active_trigger_registry.clear();
-        
+
         log::info!(
             "Check passed, sleeping for {}s",
             &config.settings.poll_seconds

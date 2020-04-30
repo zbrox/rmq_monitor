@@ -22,5 +22,5 @@ USER 1000
 
 # need to mount the config as a volume
 # example run:
-# docker run -it -v (pwd)/your_config.toml:/rmq_slack/config.toml --rm rmq_monitor:latest
-CMD ["./rmq_monitor", "--config", "/rmq_slack/config.toml"]
+# docker run -it -v (pwd)/your_config.toml:/config/config.toml --rm rmq_monitor:latest
+CMD ["./rmq_monitor", "--config", "/config/config.toml"]

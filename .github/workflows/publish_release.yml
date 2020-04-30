@@ -32,9 +32,9 @@ jobs:
       - name: Archive binary
         run: tar cfJ rmq_monitor-${{ matrix.os }}-${{ steps.get_version.outputs.VERSION }}.tar.xz target/release/rmq_monitor
       - name: Save archived binary as an artifact
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
-          name: binary-${{ matrix.os }}-${{ steps.get_version.outputs.VERSION }}
+          name: binaries
           path: rmq_monitor-${{ matrix.os }}-${{ steps.get_version.outputs.VERSION }}.tar.xz
   create_github_release:
     name: Prepare a GitHub release
@@ -44,24 +44,18 @@ jobs:
       - name: Get the version
         id: get_version
         run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
-      - name: Download macOS binary archive
-        uses: actions/download-artifact@v1
+      - name: Download binaries from artifact
+        uses: actions/download-artifact@v2
         with:
-          name: binary-macOS-latest-${{ steps.get_version.outputs.VERSION }}
-          path: rmq_monitor-macOS-${{ steps.get_version.outputs.VERSION }}.tar.xz
-      - name: Download Linux binary archive
-        uses: actions/download-artifact@v1
-        with:
-          name: binary-ubuntu-latest-${{ steps.get_version.outputs.VERSION }}
-          path: rmq_monitor-ubuntu-${{ steps.get_version.outputs.VERSION }}.tar.xz
+          name: binaries
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           name: rmq_monitor v${{ steps.get_version.outputs.VERSION }}
           files: |
             LICENSE
-            rmq_monitor-macOS-${{ steps.get_version.outputs.VERSION }}.tar.xz
-            rmq_monitor-ubuntu-${{ steps.get_version.outputs.VERSION }}.tar.xz
+            binaries/rmq_monitor-macOS-${{ steps.get_version.outputs.VERSION }}.tar.xz
+            binaries/rmq_monitor-ubuntu-${{ steps.get_version.outputs.VERSION }}.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   publish_crate:

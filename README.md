@@ -23,6 +23,6 @@ There's a minimal Docker image [published on Docker hub](https://hub.docker.com/
 To use it you only need to mount a volume with your config file. Example:
 
 ```
-docker run -it -v (pwd)/your_config.toml:/config.toml --rm zbrox/rmq_monitor:latest
+docker run -it -v (pwd)/your_config.toml:/config/config.toml --rm zbrox/rmq_monitor:latest
 ```
 

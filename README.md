@@ -26,3 +26,12 @@ To use it you only need to mount a volume with your config file. The container w
 docker run -it -v (pwd)/your_config.toml:/config/config.toml --rm zbrox/rmq_monitor:latest
 ```
 
+or if you're running in kubernetes and it's easier to mount the whole folder:
+
+```
+docker run -it -v (pwd)/where_i_keep_configs:/config --rm zbrox/rmq_monitor:latest
+```
+
+Obviously in this case you have to name the config file in that folder also `config.toml`. Later I'll add a container variable to be able to change that name as well.
+
+

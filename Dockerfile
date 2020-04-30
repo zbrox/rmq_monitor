@@ -1,5 +1,7 @@
+# Need to build with musl but not on alpine
 FROM rust:1.43.0 AS build
 WORKDIR /usr/src
+# musl-tools missing by default in the standard image
 RUN apt update && apt install -y musl-tools
 RUN rustup target add x86_64-unknown-linux-musl
 

@@ -1,10 +1,10 @@
+mod config;
 mod rmq;
 mod slack;
 
 use anyhow::{Context, Result};
 use human_panic::setup_panic;
 use rmq::{get_queue_info, QueueStat};
-use serde_derive::Deserialize;
 use slack::{send_multiple_slack_msgs, SlackMsg};
 use std::fs;
 use std::path::PathBuf;
@@ -18,103 +18,6 @@ struct Cli {
     #[structopt(long = "config", short = "c", default_value = "config.toml")]
     config_path: PathBuf,
 }
-
-#[derive(Deserialize, Debug)]
-struct Config {
-    rabbitmq: RabbitMqConfig,
-    settings: MonitorSettings,
-    slack: SlackConfig,
-    triggers: Vec<Trigger>,
-}
-
-#[derive(Deserialize, Debug)]
-struct RabbitMqConfig {
-    protocol: String,
-    host: String,
-    username: String,
-    password: String,
-    port: String,
-    vhost: String,
-}
-
-#[derive(Deserialize, Debug)]
-struct MonitorSettings {
-    poll_seconds: u64,
-}
-
-#[derive(Deserialize, Debug)]
-struct SlackConfig {
-    webhook_url: String,
-    channel: String,
-    screen_name: String,
-    icon_url: Option<String>,
-    icon_emoji: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(tag = "type")]
-enum Trigger {
-    #[serde(rename = "consumers_total")]
-    ConsumersTotal(TriggerData),
-
-    #[serde(rename = "memory_total")]
-    MemoryTotal(TriggerData),
-
-    #[serde(rename = "messages_total")]
-    MessagesTotal(TriggerData),
-
-    #[serde(rename = "messages_ready")]
-    ReadyMsgs(TriggerData),
-
-    #[serde(rename = "messages_unacknowledged")]
-    UnacknowledgedMsgs(TriggerData),
-}
-
-impl Trigger {
-    fn data(&self) -> &TriggerData {
-        match self {
-            Trigger::ConsumersTotal(data) => data,
-            Trigger::MemoryTotal(data) => data,
-            Trigger::MessagesTotal(data) => data,
-            Trigger::ReadyMsgs(data) => data,
-            Trigger::UnacknowledgedMsgs(data) => data,
-        }
-    }
-
-    fn field_name(&self) -> &'static str {
-        match *self {
-            Trigger::ConsumersTotal(_) => "consumers",
-            Trigger::MemoryTotal(_) => "memory",
-            Trigger::MessagesTotal(_) => "messages",
-            Trigger::ReadyMsgs(_) => "messages_ready",
-            Trigger::UnacknowledgedMsgs(_) => "messages_unacknowledged",
-        }
-    }
-
-    fn name(&self) -> &'static str {
-        match *self {
-            Trigger::ConsumersTotal(_) => "total number of consumers",
-            Trigger::MemoryTotal(_) => "memory consumption",
-            Trigger::MessagesTotal(_) => "total number of messages",
-            Trigger::ReadyMsgs(_) => "ready messages",
-            Trigger::UnacknowledgedMsgs(_) => "unacknowledged messages",
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-struct TriggerData {
-    threshold: u64,
-    queue: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-enum TriggerType {
-    Ready,
-}
-
-type QueueName = str;
-type TriggerFieldname = str;
 
 fn main() -> Result<()> {
     setup_panic!();

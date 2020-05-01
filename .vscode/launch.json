@@ -1,0 +1,42 @@
+{
+    "version": "0.1.1",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug 'rmq_monitor'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=rmq_monitor",
+                    "--package=rmq_monitor"
+                ],
+                "filter": {
+                    "name": "rmq_monitor",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in 'rmq_monitor'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=rmq_monitor",
+                    "--package=rmq_monitor"
+                ],
+                "filter": {
+                    "name": "rmq_monitor",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

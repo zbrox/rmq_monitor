@@ -1,8 +1,10 @@
-use reqwest::blocking::Client;
 use serde_derive::{Serialize};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Result, bail};
+use async_std::{task};
+use surf;
+use std::thread;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct SlackMsg {
     pub username: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -16,7 +18,7 @@ pub struct SlackMsg {
     pub attachments: Option<Vec<SlackAttachment>>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct SlackAttachment {
     pub fallback: String,
     pub title: String,
@@ -37,7 +39,7 @@ pub struct SlackAttachment {
     pub fields: Option<Vec<SlackMsgField>>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, Clone)]
 pub struct SlackMsgField {
     pub title: String,
     pub value: String,
@@ -49,34 +51,41 @@ struct SlackMsgPayload {
     payload: String,
 }
 
-pub fn send_slack_msg(webhook_url: &str, msg: &SlackMsg) -> Result<()> {
-    let client = Client::new();
+pub async fn send_slack_msg(webhook_url: &str, msg: &SlackMsg) -> Result<()> {
+    let mut response = match surf::post(webhook_url).body_json(msg)?.await {
+        Ok(response) => response,
+        Err(error) => bail!(error),
+    };
     
-    let response = client
-        .post(webhook_url)
-        .json(msg)
-        .send()?;
-
     if response.status() != 200 {
-        return Err(anyhow!("Slack API Error: HTTP {} {}", response.status(), response.text()?));
+        let body_string = match response.body_string().await {
+            Ok(body_string) => body_string,
+            Err(error) => bail!(error),
+        };
+        return Err(anyhow!("Slack API Error: HTTP {} {}", response.status(), body_string));
     }
 
     Ok(())
 }
 
-pub fn send_multiple_slack_msgs(webhook_url: &str, msgs: &Vec<SlackMsg>) -> Result<()> {
-    msgs.iter()
-        .map(|msg| {
-            log::debug!("Message body {:?}", msg);
-            log::info!("Sending message to {}", msg.channel);
-            send_slack_msg(webhook_url, msg)
-        })
-        .for_each(|v| {
-            match v {
-                Ok(_) => {}
+pub fn send_multiple_slack_msgs(webhook_url: &str, msgs: Vec<SlackMsg>) -> Vec<task::JoinHandle<()>> {
+    let mut tasks = Vec::with_capacity(msgs.len());
+
+    for msg in msgs {
+        let msg = msg.clone();
+        let url = webhook_url.to_string();
+        
+        let task = task::spawn(async move {
+            match send_slack_msg(&url, &msg).await {
+                Ok(_) => {
+                    log::info!("Sent message to {}", msg.channel);
+                    log::debug!("Slack message body {:#?}, sent on {:?}", msg, thread::current().id());
+                }
                 Err(e) => log::error!("Error sending Slack message: {}", e),
-            };
+            }
         });
-    
-    Ok(())
+        tasks.push(task)
+    }
+
+    tasks
 }

@@ -24,3 +24,9 @@ pub fn check_trigger_applicability(trigger: &Trigger, queue_name: &str, stat: &Q
         return trigger.field_name() == stat.name;
     }
 }
+
+
+pub async fn check_loop() -> Result<()> {
+    
+    Ok(())
+}

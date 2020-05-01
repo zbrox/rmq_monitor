@@ -47,13 +47,17 @@ fn main() -> Result<()> {
             &config.rabbitmq.host,
             &config.rabbitmq.port
         );
-        let queue_info = get_queue_info(
-            &config.rabbitmq.protocol,
-            &config.rabbitmq.host,
-            &config.rabbitmq.port,
-            &config.rabbitmq.username,
-            &config.rabbitmq.password,
-        )?;
+        let rabbitmq_config = config.rabbitmq.clone();
+        let get_queue_info_task = task::spawn(async move {
+            get_queue_info(
+                &rabbitmq_config.protocol,
+                &rabbitmq_config.host,
+                &rabbitmq_config.port,
+                &rabbitmq_config.username,
+                &rabbitmq_config.password,
+            ).await
+        });
+        let queue_info = task::block_on(get_queue_info_task)?;
         log::debug!("Fetched queue info: {:?}", queue_info);
 
         let mut active_trigger_registry: Vec<(&QueueName, &TriggerFieldname)> = vec![];
@@ -88,7 +92,12 @@ fn main() -> Result<()> {
             .flat_map(|msgs| msgs)
             .collect();
 
-        send_multiple_slack_msgs(&config.slack.webhook_url, &msgs)?;
+        let send_tasks = send_multiple_slack_msgs(&config.slack.webhook_url, msgs);
+        task::block_on(async {
+            for task in send_tasks {
+                task.await
+            }
+        });
 
         active_trigger_registry.clear();
 

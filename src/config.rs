@@ -8,7 +8,7 @@ pub struct Config {
     pub triggers: Vec<Trigger>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct RabbitMqConfig {
     pub protocol: String,
     pub host: String,

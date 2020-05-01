@@ -5,14 +5,14 @@ mod utils;
 
 use anyhow::{Result};
 use human_panic::setup_panic;
-use rmq::{get_queue_info, QueueStat};
+use rmq::{get_queue_info};
 use slack::{send_multiple_slack_msgs, SlackMsg};
 use std::path::PathBuf;
 use std::{thread, time};
 use structopt::StructOpt;
 use async_std::task;
-use utils::read_config;
-use config::{QueueName, Trigger, TriggerFieldname};
+use utils::{read_config, check_trigger_applicability};
+use config::{QueueName, TriggerFieldname};
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -97,13 +97,5 @@ fn main() -> Result<()> {
             &config.settings.poll_seconds
         );
         thread::sleep(sleep_time);
-    }
-}
-
-fn check_trigger_applicability(trigger: &Trigger, queue_name: &str, stat: &QueueStat) -> bool {
-    if let Some(trigger_queue_name) = &trigger.data().queue {
-        return trigger_queue_name == queue_name && trigger.field_name() == stat.name;
-    } else {
-        return trigger.field_name() == stat.name;
     }
 }

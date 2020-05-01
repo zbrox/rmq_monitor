@@ -1,16 +1,18 @@
 mod config;
 mod rmq;
 mod slack;
+mod utils;
 
-use anyhow::{Context, Result};
+use anyhow::{Result};
 use human_panic::setup_panic;
 use rmq::{get_queue_info, QueueStat};
 use slack::{send_multiple_slack_msgs, SlackMsg};
-use std::fs;
 use std::path::PathBuf;
 use std::{thread, time};
 use structopt::StructOpt;
-use toml;
+use async_std::task;
+use utils::read_config;
+use config::{QueueName, Trigger, TriggerFieldname};
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -25,14 +27,12 @@ fn main() -> Result<()> {
 
     env_logger::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    let config_str: String = fs::read_to_string(&args.config_path).with_context(|| {
-        format!(
-            "Could not read config {}",
-            &args.config_path.as_path().display().to_string()
-        )
-    })?;
+    let config_path = args.config_path.clone();
+    let read_config_task = task::spawn(async move {
+        read_config(&config_path).await
+    });
 
-    let config: Config = toml::from_str(&config_str).context("Could not parse TOML config")?;
+    let config = task::block_on(read_config_task)?;
 
     log::info!(
         "Read config file from {}",

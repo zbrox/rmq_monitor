@@ -44,6 +44,7 @@ fn queue_trigger_name(queue_name: &str, trigger_name: &str) -> String {
 
 pub async fn check_loop(
     poll_interval: Duration,
+    expiration_in_seconds: u64,
     rmq_config: RabbitMqConfig,
     slack_config: SlackConfig,
     triggers: Vec<Trigger>,
@@ -81,12 +82,18 @@ pub async fn check_loop(
             let queue_trigger_type =
                 queue_trigger_name(&msg.metadata.queue_name, &msg.metadata.trigger_type);
             let current_ts = get_unix_timestamp().context("Cannot get UNIX timestamp")?;
-            match has_msg_expired(&mut sent_msgs_registry, &queue_trigger_type, current_ts) {
+            match has_msg_expired(
+                &mut sent_msgs_registry,
+                &queue_trigger_type,
+                current_ts,
+                &expiration_in_seconds,
+            ) {
                 Ok(ExpirationStatus::Expired) => {
                     log::debug!(
-                        "Message for queue {} of type {} has expired. Resending...",
+                        "Message for queue {} of type {} has expired (expiration time is {}s). Resending...",
                         &msg.metadata.queue_name,
-                        &msg.metadata.trigger_type
+                        &msg.metadata.trigger_type,
+                        &expiration_in_seconds,
                     );
                 }
                 Ok(ExpirationStatus::NotExpired) => {
@@ -138,10 +145,11 @@ fn has_msg_expired(
     msg_expiration_log: &mut MsgExpirationLog,
     queue_trigger_type: &QueueTriggerType,
     current_ts: UnixTimestamp,
+    expiration_in_seconds: &u64,
 ) -> Result<ExpirationStatus> {
     match msg_expiration_log.get(queue_trigger_type) {
         Some(ts) => {
-            if ts + (60 * 10) < current_ts {
+            if ts + expiration_in_seconds < current_ts {
                 *msg_expiration_log
                     .get_mut(queue_trigger_type)
                     .expect("No such entry in sent msgs log") = current_ts;

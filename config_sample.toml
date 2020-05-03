@@ -7,7 +7,9 @@ password="the_password"
 vhost="%2f"
 
 [settings]
-poll_seconds=60 # how often to check
+poll_seconds=30 # how often to check
+msg_expiration_seconds=600 # Default value: 600s (10min); when the message expires it can be resent again, making 
+                           # it possible to check more often but not spam Slack with the same messages
 
 [slack]
 webhook_url="https://hooks.slack.com/services/xxx/xxxx"

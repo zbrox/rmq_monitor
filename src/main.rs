@@ -38,6 +38,7 @@ fn main() -> Result<()> {
     let sleep_time = time::Duration::from_secs(config.settings.poll_seconds);
     task::block_on(check_loop(
         sleep_time,
+        config.settings.msg_expiration_seconds,
         config.rabbitmq,
         config.slack,
         config.triggers,

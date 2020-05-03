@@ -21,6 +21,12 @@ pub struct RabbitMqConfig {
 #[derive(Deserialize, Debug)]
 pub struct MonitorSettings {
     pub poll_seconds: u64,
+    #[serde(default = "default_expiration")]
+    pub msg_expiration_seconds: u64,
+}
+
+fn default_expiration() -> u64 {
+    600
 }
 
 #[derive(Deserialize, Debug)]

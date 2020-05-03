@@ -10,12 +10,17 @@ pub struct Config {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RabbitMqConfig {
+    #[serde(default = "default_protocol")]
     pub protocol: String,
     pub host: String,
     pub username: String,
     pub password: String,
     pub port: String,
     pub vhost: String,
+}
+
+fn default_protocol() -> String {
+    "https".into()
 }
 
 #[derive(Deserialize, Debug)]

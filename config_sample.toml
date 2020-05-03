@@ -1,5 +1,5 @@
 [rabbitmq]
-protocol="http"
+protocol="http" # default is https
 host="192.168.0.1"
 port="15672"
 username="the_username"

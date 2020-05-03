@@ -30,8 +30,9 @@ fn main() -> Result<()> {
     let config = task::block_on(read_config_task)?;
 
     log::info!(
-        "Read config file from {}",
-        &args.config_path.to_str().unwrap_or_default()
+        "Read config file from {}. Checking queue info every {}s.",
+        &args.config_path.to_str().unwrap_or_default(),
+        &config.settings.poll_seconds,
     );
     log::debug!("Config loaded: {:?}", config);
 

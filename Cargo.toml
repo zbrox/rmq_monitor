@@ -1,6 +1,6 @@
 [package]
 name = "rmq_monitor"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Rostislav Raykov <z@zbrox.org>"]
 edition = "2018"
 description = "A simple tool which monitors RabbitMQ and notifies via Slack (legacy webhooks) when certain thresholds are met"

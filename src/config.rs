@@ -93,6 +93,3 @@ pub struct TriggerData {
 pub enum TriggerType {
     Ready,
 }
-
-pub type QueueName = str;
-pub type TriggerFieldname = str;

@@ -1,8 +1,6 @@
 use serde_derive::{Serialize};
 use anyhow::{anyhow, Result, bail};
-use async_std::{task};
 use surf;
-use std::thread;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct SlackMsg {
@@ -43,26 +41,4 @@ pub async fn send_slack_msg(webhook_url: &str, msg: &SlackMsg) -> Result<()> {
     }
 
     Ok(())
-}
-
-pub fn send_multiple_slack_msgs(webhook_url: &str, msgs: Vec<SlackMsg>) -> Vec<task::JoinHandle<()>> {
-    let mut tasks = Vec::with_capacity(msgs.len());
-
-    for msg in msgs {
-        let msg = msg.clone();
-        let url = webhook_url.to_string();
-        
-        let task = task::spawn(async move {
-            match send_slack_msg(&url, &msg).await {
-                Ok(_) => {
-                    log::info!("Sent message to {}", msg.channel);
-                    log::debug!("Slack message body {:#?}, sent on {:?}", msg, thread::current().id());
-                }
-                Err(e) => log::error!("Error sending Slack message: {}", e),
-            }
-        });
-        tasks.push(task)
-    }
-
-    tasks
 }

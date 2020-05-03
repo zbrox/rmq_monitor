@@ -5,14 +5,11 @@ mod utils;
 
 use anyhow::{Result};
 use human_panic::setup_panic;
-use rmq::{get_queue_info};
-use slack::{send_multiple_slack_msgs, SlackMsg};
 use std::path::PathBuf;
-use std::{thread, time};
+use std::time;
 use structopt::StructOpt;
 use async_std::task;
-use utils::{read_config, check_trigger_applicability};
-use config::{QueueName, TriggerFieldname};
+use utils::{read_config, check_loop};
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -41,70 +38,5 @@ fn main() -> Result<()> {
     log::debug!("Config loaded: {:?}", config);
 
     let sleep_time = time::Duration::from_secs(config.settings.poll_seconds);
-    loop {
-        log::info!(
-            "Checking queue info at {}:{}",
-            &config.rabbitmq.host,
-            &config.rabbitmq.port
-        );
-        let rabbitmq_config = config.rabbitmq.clone();
-        let get_queue_info_task = task::spawn(async move {
-            get_queue_info(
-                &rabbitmq_config.protocol,
-                &rabbitmq_config.host,
-                &rabbitmq_config.port,
-                &rabbitmq_config.username,
-                &rabbitmq_config.password,
-            ).await
-        });
-        let queue_info = task::block_on(get_queue_info_task)?;
-        log::debug!("Fetched queue info: {:?}", queue_info);
-
-        let mut active_trigger_registry: Vec<(&QueueName, &TriggerFieldname)> = vec![];
-        let msgs: Vec<SlackMsg> = config.triggers.iter()
-            .map(|t| {
-                let msgs: Vec<SlackMsg> = queue_info.iter()
-                    .filter(|qi| check_trigger_applicability(t, &qi.name, &qi.stat))
-                    .filter(|qi| qi.stat.value > t.data().threshold)
-                    .map(|qi| {
-                        if active_trigger_registry.contains(&(&qi.name, t.field_name())) {
-                            return None;
-                        }
-                        active_trigger_registry.push((&qi.name, t.field_name()));
-                        Some(SlackMsg {
-                            username: config.slack.screen_name.clone(),
-                            channel: format!("#{}", &config.slack.channel),
-                            text: Some(format!("Queue {name} has passed a threshold of {threshold} {trigger_type}. Currently at {number}.", 
-                                name = &qi.name,
-                                threshold = t.data().threshold,
-                                number = qi.stat.value,
-                                trigger_type = t.name(),
-                            )),
-                            icon_url: config.slack.icon_url.clone(),
-                            icon_emoji: config.slack.icon_emoji.clone(),
-                            attachments: None,
-                        })
-                    })
-                    .filter_map(|v| v)
-                    .collect();
-                return msgs;
-            })
-            .flat_map(|msgs| msgs)
-            .collect();
-
-        let send_tasks = send_multiple_slack_msgs(&config.slack.webhook_url, msgs);
-        task::block_on(async {
-            for task in send_tasks {
-                task.await
-            }
-        });
-
-        active_trigger_registry.clear();
-
-        log::info!(
-            "Check passed, sleeping for {}s",
-            &config.settings.poll_seconds
-        );
-        thread::sleep(sleep_time);
-    }
+    task::block_on(check_loop(sleep_time, config.rabbitmq, config.slack, config.triggers))
 }

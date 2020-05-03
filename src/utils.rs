@@ -32,6 +32,7 @@ pub fn check_trigger_applicability(trigger: &Trigger, queue_name: &str, stat: &Q
 
 type QueueTriggerType = String;
 type UnixTimestamp = u64;
+type MsgExpirationLog = HashMap<QueueTriggerType, UnixTimestamp>;
 
 fn get_unix_timestamp() -> Result<UnixTimestamp> {
     Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs())
@@ -79,29 +80,16 @@ pub async fn check_loop(
         for msg in msgs {
             let queue_trigger_type =
                 queue_trigger_name(&msg.metadata.queue_name, &msg.metadata.trigger_type);
-
-            if !sent_msgs_registry.contains_key(&queue_trigger_type) {
-                log::debug!(
-                    "Haven't yet sent a message for queue {} of type {} has expired. Logging in registry.",
-                    &msg.metadata.queue_name,
-                    &msg.metadata.trigger_type
-                );
-                sent_msgs_registry.insert(
-                    queue_trigger_type,
-                    get_unix_timestamp().context("Cannot get UNIX timestamp")?,
-                );
-            } else if let Some(ts) = sent_msgs_registry.get(&queue_trigger_type) {
-                let current_ts = get_unix_timestamp().context("Cannot get UNIX timestamp")?;
-                if ts + (60 * 10) < current_ts {
+            let current_ts = get_unix_timestamp().context("Cannot get UNIX timestamp")?;
+            match has_msg_expired(&mut sent_msgs_registry, &queue_trigger_type, current_ts) {
+                Ok(ExpirationStatus::Expired) => {
                     log::debug!(
-                        "Time since last message for queue {} of type {} has expired. Valid for sending again.",
+                        "Message for queue {} of type {} has expired. Resending...",
                         &msg.metadata.queue_name,
                         &msg.metadata.trigger_type
                     );
-                    *sent_msgs_registry
-                        .get_mut(&queue_trigger_type)
-                        .expect("No such entry in sent msgs log") = current_ts;
-                } else {
+                }
+                Ok(ExpirationStatus::NotExpired) => {
                     log::debug!(
                         "Last message for queue {} of type {} was sent too recently. Skipping sending this one...",
                         &msg.metadata.queue_name,
@@ -109,7 +97,18 @@ pub async fn check_loop(
                     );
                     continue;
                 }
-            }
+                Ok(ExpirationStatus::NotSentYet) => {
+                    log::debug!(
+                        "Haven't yet sent a message for queue {} of type {} has expired. Saved in log.",
+                        &msg.metadata.queue_name,
+                        &msg.metadata.trigger_type
+                    );
+                }
+                Err(error) => {
+                    log::error!("Unexpected error with msgs: {}", error);
+                    continue;
+                }
+            };
 
             match send_slack_msg(&slack_config.webhook_url, &msg).await {
                 Ok(_) => {
@@ -127,6 +126,38 @@ pub async fn check_loop(
         log::info!("Check passed, sleeping for {}s", &poll_interval.as_secs(),);
     }
     Ok(())
+}
+
+enum ExpirationStatus {
+    Expired,
+    NotSentYet,
+    NotExpired,
+}
+
+fn has_msg_expired(
+    msg_expiration_log: &mut MsgExpirationLog,
+    queue_trigger_type: &QueueTriggerType,
+    current_ts: UnixTimestamp,
+) -> Result<ExpirationStatus> {
+    match msg_expiration_log.get(queue_trigger_type) {
+        Some(ts) => {
+            if ts + (60 * 10) < current_ts {
+                *msg_expiration_log
+                    .get_mut(queue_trigger_type)
+                    .expect("No such entry in sent msgs log") = current_ts;
+                return Ok(ExpirationStatus::Expired);
+            } else {
+                return Ok(ExpirationStatus::NotExpired);
+            }
+        }
+        None => {
+            msg_expiration_log.insert(
+                queue_trigger_type.into(),
+                get_unix_timestamp().context("Cannot get UNIX timestamp")?,
+            );
+            return Ok(ExpirationStatus::NotSentYet);
+        }
+    }
 }
 
 fn build_msgs_for_trigger(

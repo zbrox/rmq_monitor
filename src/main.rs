@@ -3,13 +3,13 @@ mod rmq;
 mod slack;
 mod utils;
 
-use anyhow::{Result};
+use anyhow::Result;
+use async_std::task;
 use human_panic::setup_panic;
 use std::path::PathBuf;
 use std::time;
 use structopt::StructOpt;
-use async_std::task;
-use utils::{read_config, check_loop};
+use utils::{check_loop, read_config};
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -25,9 +25,7 @@ fn main() -> Result<()> {
     env_logger::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     let config_path = args.config_path.clone();
-    let read_config_task = task::spawn(async move {
-        read_config(&config_path).await
-    });
+    let read_config_task = task::spawn(async move { read_config(&config_path).await });
 
     let config = task::block_on(read_config_task)?;
 
@@ -38,5 +36,10 @@ fn main() -> Result<()> {
     log::debug!("Config loaded: {:?}", config);
 
     let sleep_time = time::Duration::from_secs(config.settings.poll_seconds);
-    task::block_on(check_loop(sleep_time, config.rabbitmq, config.slack, config.triggers))
+    task::block_on(check_loop(
+        sleep_time,
+        config.rabbitmq,
+        config.slack,
+        config.triggers,
+    ))
 }

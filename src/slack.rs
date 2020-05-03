@@ -1,6 +1,6 @@
-use serde_derive::{Serialize};
+use anyhow::{anyhow, bail, Result};
 use serde::Serializer;
-use anyhow::{anyhow, Result, bail};
+use serde_derive::Serialize;
 use surf;
 
 #[derive(Serialize, Debug, Clone)]
@@ -20,7 +20,8 @@ fn slack_metadata_to_msg_text<S>(metadata: &SlackMsgMetadata, s: S) -> Result<S:
 where
     S: Serializer,
 {
-    let text = format!("Queue {name} has passed a threshold of {threshold} {trigger_type}. Currently at {number}.", 
+    let text = format!(
+        "Queue {name} has passed a threshold of {threshold} {trigger_type}. Currently at {number}.",
         name = metadata.queue_name,
         threshold = metadata.threshold,
         trigger_type = metadata.trigger_type,
@@ -42,13 +43,17 @@ pub async fn send_slack_msg(webhook_url: &str, msg: &SlackMsg) -> Result<()> {
         Ok(response) => response,
         Err(error) => bail!(error),
     };
-    
+
     if response.status() != 200 {
         let body_string = match response.body_string().await {
             Ok(body_string) => body_string,
             Err(error) => bail!(error),
         };
-        return Err(anyhow!("Slack API Error: HTTP {} {}", response.status(), body_string));
+        return Err(anyhow!(
+            "Slack API Error: HTTP {} {}",
+            response.status(),
+            body_string
+        ));
     }
 
     Ok(())

@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use toml;
 use crate::config::{Config, Trigger, RabbitMqConfig, SlackConfig};
 use crate::rmq::{QueueStat, get_queue_info, QueueInfo};
-use crate::slack::{SlackMsg, send_slack_msg};
+use crate::slack::{SlackMsg, SlackMsgMetadata, send_slack_msg};
 use std::time::Duration;
 use std::thread;
 
@@ -81,14 +81,14 @@ fn build_msgs_for_trigger(queue_info: &Vec<QueueInfo>, trigger: &Trigger, slack_
             Some(SlackMsg {
                 username: slack_config.screen_name.clone(),
                 channel: format!("#{}", &slack_config.channel),
-                text: Some(format!("Queue {name} has passed a threshold of {threshold} {trigger_type}. Currently at {number}.", 
-                    name = &qi.name,
-                    threshold = trigger.data().threshold,
-                    number = qi.stat.value,
-                    trigger_type = trigger.name(),
-                )),
                 icon_url: slack_config.icon_url.clone(),
                 icon_emoji: slack_config.icon_emoji.clone(),
+                metadata: SlackMsgMetadata {
+                    queue_name: qi.name.clone(),
+                    threshold: trigger.data().threshold,
+                    current_value: qi.stat.value.clone(),
+                    trigger_type: trigger.name().into(),
+                },
             })
         })
         .filter_map(|v| v)

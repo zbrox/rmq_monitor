@@ -1,4 +1,5 @@
 use serde_derive::{Serialize};
+use serde::Serializer;
 use anyhow::{anyhow, Result, bail};
 use surf;
 
@@ -10,20 +11,30 @@ pub struct SlackMsg {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon_emoji: Option<String>,
     pub channel: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub text: Option<String>,
+
+    #[serde(serialize_with = "slack_metadata_to_msg_text", rename = "text")]
+    pub metadata: SlackMsgMetadata,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct SlackMsgField {
-    pub title: String,
-    pub value: String,
-    pub short: bool,
+fn slack_metadata_to_msg_text<S>(metadata: &SlackMsgMetadata, s: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let text = format!("Queue {name} has passed a threshold of {threshold} {trigger_type}. Currently at {number}.", 
+        name = metadata.queue_name,
+        threshold = metadata.threshold,
+        trigger_type = metadata.trigger_type,
+        number = metadata.current_value,
+    );
+    s.serialize_str(&text)
 }
 
-#[derive(Serialize, Debug)]
-struct SlackMsgPayload {
-    payload: String,
+#[derive(Debug, Clone)]
+pub struct SlackMsgMetadata {
+    pub queue_name: String,
+    pub threshold: u64,
+    pub current_value: u64,
+    pub trigger_type: String,
 }
 
 pub async fn send_slack_msg(webhook_url: &str, msg: &SlackMsg) -> Result<()> {

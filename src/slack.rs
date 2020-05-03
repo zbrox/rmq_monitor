@@ -14,29 +14,6 @@ pub struct SlackMsg {
     pub channel: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub attachments: Option<Vec<SlackAttachment>>,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct SlackAttachment {
-    pub fallback: String,
-    pub title: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<String>,
-    pub pretext: String,
-    pub author_name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub author_link: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub author_icon: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub mrkdwn_in: Option<Vec<String>>,
-    pub text: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub thumb_url: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fields: Option<Vec<SlackMsgField>>,
 }
 
 #[derive(Serialize, Debug, Clone)]

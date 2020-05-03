@@ -21,7 +21,7 @@ where
     S: Serializer,
 {
     let text = format!(
-        "Queue {name} has passed a threshold of {threshold} {trigger_type}. Currently at {number}.",
+        "Queue *{name}* has passed a threshold of {threshold} {trigger_type}. Currently at *{number}*.",
         name = metadata.queue_name,
         threshold = metadata.threshold,
         trigger_type = metadata.trigger_type,

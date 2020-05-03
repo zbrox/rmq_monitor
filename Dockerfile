@@ -1,9 +1,9 @@
-# Need to build with musl but not on alpine
-FROM rust:1.43.0 AS build
+# Need to build with musl, this image comes with the musl target
+# and openssl linked against musl
+# It doesn't have 1.43.0 so we gonna use the default latest
+# which I think uses nightly
+FROM clux/muslrust AS build
 WORKDIR /usr/src
-# musl-tools missing by default in the standard image
-RUN apt update && apt install -y musl-tools
-RUN rustup target add x86_64-unknown-linux-musl
 
 # Build dependencies and rely on cache if Cargo.toml
 # or Cargo.lock haven't changed
@@ -19,7 +19,7 @@ RUN cargo install --target x86_64-unknown-linux-musl --path .
 # Copy the statically-linked binary into a scratch container.
 FROM scratch
 
-COPY --from=build /usr/local/cargo/bin/rmq_monitor .
+COPY --from=build /root/.cargo/bin/rmq_monitor .
 USER 1000
 
 # need to mount the config as a volume

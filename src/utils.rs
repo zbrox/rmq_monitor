@@ -8,7 +8,6 @@ use std::path::PathBuf;
 use std::thread;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
-use toml;
 
 pub async fn read_config(path: &PathBuf) -> Result<Config> {
     let config_contents: String = fs::read_to_string(path).await.with_context(|| {
@@ -24,9 +23,9 @@ pub async fn read_config(path: &PathBuf) -> Result<Config> {
 
 pub fn check_trigger_applicability(trigger: &Trigger, queue_name: &str, stat: &QueueStat) -> bool {
     if let Some(trigger_queue_name) = &trigger.data().queue {
-        return trigger_queue_name == queue_name && trigger.field_name() == stat.name;
+        trigger_queue_name == queue_name && trigger.field_name() == stat.name
     } else {
-        return trigger.field_name() == stat.name;
+        trigger.field_name() == stat.name
     }
 }
 
@@ -75,7 +74,7 @@ pub async fn check_loop(
         let msgs: Vec<SlackMsg> = triggers
             .iter()
             .map(|trigger| build_msgs_for_trigger(&queue_info, &trigger, &slack_config))
-            .flat_map(|msgs| msgs)
+            .flatten()
             .collect();
 
         for msg in msgs {
@@ -84,9 +83,9 @@ pub async fn check_loop(
             let current_ts = get_unix_timestamp().context("Cannot get UNIX timestamp")?;
             match has_msg_expired(
                 &mut sent_msgs_registry,
-                &queue_trigger_type,
+                queue_trigger_type,
                 current_ts,
-                &expiration_in_seconds,
+                expiration_in_seconds,
             ) {
                 Ok(ExpirationStatus::Expired) => {
                     log::debug!(
@@ -143,33 +142,33 @@ enum ExpirationStatus {
 
 fn has_msg_expired(
     msg_expiration_log: &mut MsgExpirationLog,
-    queue_trigger_type: &QueueTriggerType,
+    queue_trigger_type: QueueTriggerType,
     current_ts: UnixTimestamp,
-    expiration_in_seconds: &u64,
+    expiration_in_seconds: u64,
 ) -> Result<ExpirationStatus> {
-    match msg_expiration_log.get(queue_trigger_type) {
+    match msg_expiration_log.get(&queue_trigger_type) {
         Some(ts) => {
             if ts + expiration_in_seconds < current_ts {
                 *msg_expiration_log
-                    .get_mut(queue_trigger_type)
+                    .get_mut(&queue_trigger_type)
                     .expect("No such entry in sent msgs log") = current_ts;
-                return Ok(ExpirationStatus::Expired);
+                Ok(ExpirationStatus::Expired)
             } else {
-                return Ok(ExpirationStatus::NotExpired);
+                Ok(ExpirationStatus::NotExpired)
             }
         }
         None => {
             msg_expiration_log.insert(
-                queue_trigger_type.into(),
+                queue_trigger_type,
                 get_unix_timestamp().context("Cannot get UNIX timestamp")?,
             );
-            return Ok(ExpirationStatus::NotSentYet);
+            Ok(ExpirationStatus::NotSentYet)
         }
     }
 }
 
 fn build_msgs_for_trigger(
-    queue_info: &Vec<QueueInfo>,
+    queue_info: &[QueueInfo],
     trigger: &Trigger,
     slack_config: &SlackConfig,
 ) -> Vec<SlackMsg> {
@@ -186,7 +185,7 @@ fn build_msgs_for_trigger(
                 metadata: SlackMsgMetadata {
                     queue_name: qi.name.clone(),
                     threshold: trigger.data().threshold,
-                    current_value: qi.stat.value.clone(),
+                    current_value: qi.stat.value,
                     trigger_type: trigger.name().into(),
                 },
             })

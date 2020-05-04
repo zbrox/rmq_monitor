@@ -1,7 +1,6 @@
 use anyhow::{anyhow, bail, Result};
 use serde::Serializer;
 use serde_derive::Serialize;
-use surf;
 
 #[derive(Serialize, Debug, Clone)]
 pub struct SlackMsg {

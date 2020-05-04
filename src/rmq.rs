@@ -1,7 +1,5 @@
 use anyhow::{anyhow, bail, Context, Result};
-use base64;
 use serde_derive::Deserialize;
-use surf;
 
 #[derive(Deserialize, Debug)]
 pub struct QueueInfo {
@@ -10,7 +8,7 @@ pub struct QueueInfo {
     pub stat: QueueStat,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug)]
 pub struct QueueStat {
     pub name: String,
     pub value: u64,
@@ -19,9 +17,7 @@ pub struct QueueStat {
 fn basic_auth_token(username: &str, password: &str) -> String {
     let combined = format!("{}:{}", username, password);
     let octet = combined.as_bytes();
-    let base64_encoded = base64::encode(octet);
-
-    base64_encoded
+    base64::encode(octet)
 }
 
 pub async fn get_queue_info(
@@ -46,7 +42,7 @@ pub async fn get_queue_info(
     }
 
     let response_body: String = match response.body_string().await {
-        Ok(body) => body.into(),
+        Ok(body) => body,
         Err(error) => bail!(error),
     };
 
@@ -76,20 +72,20 @@ fn preprocess_queues_info_json(json: &mut serde_json::Value) -> Option<serde_jso
             None => return None,
         };
 
-        for k in vec![
+        for k in [
             "consumers",
             "memory",
             "messages",
             "messages_ready",
             "messages_unacknowledged",
-        ] {
-            if object.contains_key(k) {
+        ].iter() {
+            if object.contains_key(*k) {
                 queue_info.push(serde_json::json!({
                     "name": object["name"],
                     "state": object["state"],
                     "stat": {
                         "name": k,
-                        "value": object[k]
+                        "value": object[*k]
                     }
                 }));
             }
@@ -97,8 +93,8 @@ fn preprocess_queues_info_json(json: &mut serde_json::Value) -> Option<serde_jso
     }
 
     if let Ok(qi) = serde_json::to_value(queue_info) {
-        return Some(qi);
+        Some(qi)
     } else {
-        return None;
+        None
     }
 }

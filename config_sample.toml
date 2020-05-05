@@ -1,21 +1,22 @@
 [rabbitmq]
-protocol="http" # default is https
-host="192.168.0.1"
-port="15672"
-username="the_username"
-password="the_password"
-vhost="%2f"
+protocol = "http" # default is https
+host = "192.168.0.1"
+port = "15672"
+username = "the_username"
+password = "the_password"
+vhost = "%2f"
 
 [settings]
-poll_seconds=30 # how often to check
-msg_expiration_seconds=600 # Default value: 600s (10min); when the message expires it can be resent again, making 
-                           # it possible to check more often but not spam Slack with the same messages
+# No default value, need to be set
+poll_seconds = 30 # How often to check
+# Default value: 600s (10min)
+msg_expiration_seconds = 600 # when the message expires it can be resent again, making  it possible to check more often but not spam Slack with the same messages
 
 [slack]
-webhook_url="https://hooks.slack.com/services/xxx/xxxx"
-channel="the_slack_channel_name"
-screen_name="RabbitMQ"
-icon_url="https://example.com/image.png"
+webhook_url = "https://hooks.slack.com/services/xxx/xxxx"
+channel = "the_slack_channel_name"
+screen_name = "RabbitMQ"
+icon_url = "https://example.com/image.png"
 # icon_emoji=":bowtie:" # you can also use icon_emoji if you're not using icon_url, reference icon emojis at http://emoji-cheat-sheet.com
 
 [[triggers]]
@@ -23,7 +24,7 @@ type = "messages_ready" # possible values are consumers_total, memory_total, mes
 threshold = 10000
 queue = "the_queue_name" # this is optional, if ommitted it will be a rule valid for all queues
 
+# since queue is missing in this trigger, this is a global rule for all queues
 [[triggers]]
 type = "consumers_total"
 threshold = 100
-# since queue is missing, this is a global rule for all queues

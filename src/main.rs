@@ -14,11 +14,11 @@ use human_panic::setup_panic;
 use std::{collections::HashMap, path::PathBuf, sync::Arc, thread, time::Duration};
 use structopt::StructOpt;
 
-use config::{RabbitMqConfig, SlackConfig, Trigger};
+use config::{RabbitMqConfig, SlackConfig, Trigger, read_config};
 use rmq::get_queue_info;
 use slack::send_slack_msg;
 use utils::{
-    build_msgs_for_trigger, get_unix_timestamp, has_msg_expired, queue_trigger_name, read_config,
+    build_msgs_for_trigger, get_unix_timestamp, has_msg_expired, queue_trigger_name,
     ExpirationStatus, MsgExpirationLog,
 };
 

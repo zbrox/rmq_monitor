@@ -1,24 +1,10 @@
 use anyhow::{Context, Result};
 use std::collections::HashMap;
-use std::fs::read_to_string;
-use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::config::{Config, SlackConfig, Trigger};
+use crate::config::{SlackConfig, Trigger};
 use crate::rmq::{QueueInfo, QueueStat};
 use crate::slack::{SlackMsg, SlackMsgMetadata};
-
-pub fn read_config(path: &PathBuf) -> Result<Config> {
-    let config_contents: String = read_to_string(path).with_context(|| {
-        format!(
-            "Could not read config {}",
-            path.as_path().display().to_string()
-        )
-    })?;
-
-    let config: Config = toml::from_str(&config_contents).context("Could not parse TOML config")?;
-    Ok(config)
-}
 
 pub fn check_trigger_applicability(trigger: &Trigger, queue_name: &str, stat: &QueueStat) -> bool {
     if let Some(trigger_queue_name) = &trigger.data().queue {

@@ -1,4 +1,7 @@
 use serde_derive::Deserialize;
+use anyhow::{Context, Result};
+use std::fs::read_to_string;
+use std::path::PathBuf;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -103,4 +106,16 @@ pub struct TriggerData {
 #[derive(Deserialize, Debug)]
 pub enum TriggerType {
     Ready,
+}
+
+pub fn read_config(path: &PathBuf) -> Result<Config> {
+    let config_contents: String = read_to_string(path).with_context(|| {
+        format!(
+            "Could not read config {}",
+            path.as_path().display().to_string()
+        )
+    })?;
+
+    let config: Config = toml::from_str(&config_contents).context("Could not parse TOML config")?;
+    Ok(config)
 }

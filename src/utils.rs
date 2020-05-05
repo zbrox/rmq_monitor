@@ -2,9 +2,14 @@ use crate::config::{Config, RabbitMqConfig, SlackConfig, Trigger};
 use crate::rmq::{get_queue_info, QueueInfo, QueueStat};
 use crate::slack::{send_slack_msg, SlackMsg, SlackMsgMetadata};
 use anyhow::{Context, Result};
-use async_std::{fs, prelude::*, stream};
+use async_std::{fs, stream};
+use futures::{
+    future::FutureExt,
+    stream::{futures_unordered::FuturesUnordered, StreamExt},
+};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -71,63 +76,70 @@ pub async fn check_loop(
 
         log::debug!("Fetched queue info: {:?}", queue_info);
 
-        let msgs: Vec<SlackMsg> = triggers
+        triggers
             .iter()
             .map(|trigger| build_msgs_for_trigger(&queue_info, &trigger, &slack_config))
             .flatten()
-            .collect();
-
-        for msg in msgs {
-            let queue_trigger_type =
-                queue_trigger_name(&msg.metadata.queue_name, &msg.metadata.trigger_type);
-            let current_ts = get_unix_timestamp().context("Cannot get UNIX timestamp")?;
-            match has_msg_expired(
-                &mut sent_msgs_registry,
-                queue_trigger_type,
-                current_ts,
-                expiration_in_seconds,
-            ) {
-                Ok(ExpirationStatus::Expired) => {
-                    log::debug!(
-                        "Message for queue {} of type {} has expired (expiration time is {}s). Resending...",
-                        &msg.metadata.queue_name,
-                        &msg.metadata.trigger_type,
-                        &expiration_in_seconds,
-                    );
+            .filter_map(|msg| {
+                let queue_trigger_type =
+                    queue_trigger_name(&msg.metadata.queue_name, &msg.metadata.trigger_type);
+                let current_ts = get_unix_timestamp().ok()?;
+                match has_msg_expired(
+                    &mut sent_msgs_registry,
+                    queue_trigger_type,
+                    current_ts,
+                    expiration_in_seconds,
+                ) {
+                    Ok(ExpirationStatus::Expired) => {
+                        log::debug!(
+                            "Message for queue {} of type {} has expired (expiration time is {}s). Resending...",
+                            &msg.metadata.queue_name,
+                            &msg.metadata.trigger_type,
+                            &expiration_in_seconds,
+                        );
+                        Some(msg)
+                    }
+                    Ok(ExpirationStatus::NotExpired) => {
+                        log::debug!(
+                            "Last message for queue {} of type {} was sent too recently. Skipping sending this one...",
+                            &msg.metadata.queue_name,
+                            &msg.metadata.trigger_type
+                        );
+                        None
+                    }
+                    Ok(ExpirationStatus::NotSentYet) => {
+                        log::debug!(
+                            "Haven't yet sent a message for queue {} of type {} has expired. Saved in log.",
+                            &msg.metadata.queue_name,
+                            &msg.metadata.trigger_type
+                        );
+                        Some(msg)
+                    }
+                    Err(error) => {
+                        log::error!("Unexpected error with msgs: {}", error);
+                        None
+                    }
                 }
-                Ok(ExpirationStatus::NotExpired) => {
-                    log::debug!(
-                        "Last message for queue {} of type {} was sent too recently. Skipping sending this one...",
-                        &msg.metadata.queue_name,
-                        &msg.metadata.trigger_type
-                    );
-                    continue;
-                }
-                Ok(ExpirationStatus::NotSentYet) => {
-                    log::debug!(
-                        "Haven't yet sent a message for queue {} of type {} has expired. Saved in log.",
-                        &msg.metadata.queue_name,
-                        &msg.metadata.trigger_type
-                    );
-                }
-                Err(error) => {
-                    log::error!("Unexpected error with msgs: {}", error);
-                    continue;
-                }
-            };
-
-            match send_slack_msg(&slack_config.webhook_url, &msg).await {
-                Ok(_) => {
-                    log::info!("Sent message to {}", msg.channel);
-                    log::debug!(
-                        "Slack message body {:#?}, sent on {:?}",
-                        msg,
-                        thread::current().id()
-                    );
-                }
-                Err(e) => log::error!("Error sending Slack message: {}", e),
-            }
-        }
+            })
+            .map(|msg| {
+                let msg = Arc::new(msg);
+                send_slack_msg(&slack_config.webhook_url, Arc::clone(&msg))
+                .map(move |x| {
+                        match x {
+                        Ok(_) => {
+                            log::info!("Sent message to {}", msg.channel);
+                            log::debug!(
+                                "Slack message body {:#?}, sent on {:?}",
+                                msg,
+                                thread::current().id()
+                            );
+                        }
+                        Err(e) => log::error!("Error sending Slack message: {}", e),
+                    };
+                })
+            })
+            .collect::<FuturesUnordered<_>>()
+            .collect::<Vec<()>>().await;
 
         log::info!("Check passed, sleeping for {}s", &poll_interval.as_secs(),);
     }

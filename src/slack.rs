@@ -1,6 +1,8 @@
 use anyhow::{anyhow, bail, Result};
 use serde::Serializer;
 use serde_derive::Serialize;
+use std::sync::Arc;
+
 
 #[derive(Serialize, Debug, Clone)]
 pub struct SlackMsg {
@@ -37,8 +39,8 @@ pub struct SlackMsgMetadata {
     pub trigger_type: String,
 }
 
-pub async fn send_slack_msg(webhook_url: &str, msg: &SlackMsg) -> Result<()> {
-    let mut response = match surf::post(webhook_url).body_json(msg)?.await {
+pub async fn send_slack_msg(webhook_url: &str, msg: Arc<SlackMsg>) -> Result<()> {
+    let mut response = match surf::post(webhook_url).body_json(&msg.as_ref())?.await {
         Ok(response) => response,
         Err(error) => bail!(error),
     };

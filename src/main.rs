@@ -35,10 +35,7 @@ fn main() -> Result<()> {
 
     env_logger::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
-    let config_path = args.config_path.clone();
-    let read_config_task = task::spawn(async move { read_config(&config_path).await });
-
-    let config = task::block_on(read_config_task)?;
+    let config = read_config(&args.config_path)?;
 
     log::info!(
         "Read config file from {}. Checking queue info every {}s.",

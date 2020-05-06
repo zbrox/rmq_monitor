@@ -28,3 +28,6 @@ queue = "the_queue_name" # this is optional, if ommitted it will be a rule valid
 [[triggers]]
 type = "consumers_total"
 threshold = 100
+
+# Default value: above
+trigger_when = "below" # optional field, defines when the trigger is activated if the value reached is below or above the threshold

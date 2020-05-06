@@ -20,6 +20,7 @@ use rmq::get_queue_info;
 use slack::send_slack_msg;
 use utils::{
     build_msgs_for_trigger, get_unix_timestamp, has_msg_expired, ExpirationStatus, MsgExpirationLog,
+    TriggerType, QueueName,
 };
 
 #[derive(Debug, StructOpt)]
@@ -98,7 +99,7 @@ pub async fn check_loop(
             .map(|trigger| build_msgs_for_trigger(&queue_info, &trigger, &slack_config))
             .flatten()
             .filter_map(|msg| {
-                let queue_trigger_type = (SmolStr::new(&msg.metadata.queue_name), SmolStr::new(&msg.metadata.trigger_type));
+                let queue_trigger_type: (QueueName, TriggerType) = (SmolStr::new(&msg.metadata.queue_name), SmolStr::new(&msg.metadata.trigger_type));
                 let current_ts = get_unix_timestamp().ok()?;
                 match has_msg_expired(
                     &mut sent_msgs_registry,

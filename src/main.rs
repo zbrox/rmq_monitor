@@ -141,19 +141,19 @@ pub async fn check_loop(
             .map(|msg| {
                 let msg = Arc::new(msg);
                 send_slack_msg(&slack_config.webhook_url, Arc::clone(&msg))
-                .map(move |x| {
-                        match x {
-                        Ok(_) => {
-                            log::info!("Sent message to {} about {}", msg.channel, msg.metadata.queue_name);
-                            log::debug!(
-                                "Slack message body {:?}, sent on {:?}",
-                                msg,
-                                thread::current().id()
-                            );
-                        }
-                        Err(e) => log::error!("Error sending Slack message: {}", e),
-                    };
-                })
+                    .map(move |x| {
+                            match x {
+                            Ok(_) => {
+                                log::info!("Sent message to {} about {}", msg.channel, msg.metadata.queue_name);
+                                log::debug!(
+                                    "Slack message body {:?}, sent on {:?}",
+                                    msg,
+                                    thread::current().id()
+                                );
+                            }
+                            Err(e) => log::error!("Error sending Slack message: {}", e),
+                        };
+                    })
             })
             .collect::<FuturesUnordered<_>>()
             .collect::<Vec<()>>().await;

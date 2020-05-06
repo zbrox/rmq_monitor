@@ -51,7 +51,7 @@ fn main() -> Result<()> {
         &args.config_path.to_str().unwrap_or_default(),
         &config.settings.poll_seconds,
     );
-    log::debug!("Config loaded: {:#?}", config);
+    log::debug!("Config loaded: {:?}", config);
 
     let sleep_time = Duration::from_secs(config.settings.poll_seconds);
     task::block_on(check_loop(
@@ -91,7 +91,7 @@ pub async fn check_loop(
         )
         .await?;
 
-        log::debug!("Fetched queue info: {:#?}", queue_info);
+        log::debug!("Fetched queue info: {:?}", queue_info);
 
         triggers
             .iter()
@@ -143,9 +143,9 @@ pub async fn check_loop(
                 .map(move |x| {
                         match x {
                         Ok(_) => {
-                            log::info!("Sent message to {}", msg.channel);
+                            log::info!("Sent message to {} about {}", msg.channel, msg.metadata.queue_name);
                             log::debug!(
-                                "Slack message body {:#?}, sent on {:?}",
+                                "Slack message body {:?}, sent on {:?}",
                                 msg,
                                 thread::current().id()
                             );

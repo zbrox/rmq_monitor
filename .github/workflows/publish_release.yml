@@ -54,8 +54,8 @@ jobs:
           name: rmq_monitor v${{ steps.get_version.outputs.VERSION }}
           files: |
             LICENSE
-            binaries/rmq_monitor-macOS-${{ steps.get_version.outputs.VERSION }}.tar.xz
-            binaries/rmq_monitor-ubuntu-${{ steps.get_version.outputs.VERSION }}.tar.xz
+            binaries/rmq_monitor-macOS-latest-${{ steps.get_version.outputs.VERSION }}.tar.xz
+            binaries/rmq_monitor-ubuntu-latest-${{ steps.get_version.outputs.VERSION }}.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   publish_crate:

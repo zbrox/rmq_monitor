@@ -93,7 +93,22 @@ impl Trigger {
 #[derive(Deserialize, Debug)]
 pub struct TriggerData {
     pub threshold: u64,
+
+    #[serde(default = "default_trigger_when")]
+    pub trigger_when: TriggerWhen,
+
     pub queue: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum TriggerWhen {
+    Above,
+    Below,
+}
+
+fn default_trigger_when() -> TriggerWhen {
+    TriggerWhen::Above
 }
 
 pub fn read_config(path: &PathBuf) -> Result<Config> {

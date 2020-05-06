@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use smol_str::SmolStr;
 
-use crate::config::{SlackConfig, Trigger};
+use crate::config::{SlackConfig, Trigger, TriggerData, TriggerWhen};
 use crate::rmq::{QueueInfo, QueueStat};
 use crate::slack::{SlackMsg, SlackMsgMetadata};
 
@@ -58,6 +58,13 @@ pub fn has_msg_expired(
     }
 }
 
+fn is_threshold_passed(stat_value: u64, trigger_data: &TriggerData) -> bool {
+    match trigger_data.trigger_when {
+        TriggerWhen::Above => stat_value > trigger_data.threshold,
+        TriggerWhen::Below => stat_value < trigger_data.threshold,
+    }
+}
+
 pub fn build_msgs_for_trigger(
     queue_info: &[QueueInfo],
     trigger: &Trigger,
@@ -66,7 +73,7 @@ pub fn build_msgs_for_trigger(
     let msgs: Vec<SlackMsg> = queue_info
         .iter()
         .filter(|qi| check_trigger_applicability(trigger, &qi.name, &qi.stat))
-        .filter(|qi| qi.stat.value > trigger.data().threshold)
+        .filter(|qi| is_threshold_passed(qi.stat.value, trigger.data()))
         .map(|qi| {
             Some(SlackMsg {
                 username: slack_config.screen_name.clone(),

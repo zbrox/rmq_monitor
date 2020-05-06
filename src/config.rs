@@ -103,11 +103,6 @@ pub struct TriggerData {
     pub queue: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
-pub enum TriggerType {
-    Ready,
-}
-
 pub fn read_config(path: &PathBuf) -> Result<Config> {
     let config_contents: String = read_to_string(path).with_context(|| {
         format!(

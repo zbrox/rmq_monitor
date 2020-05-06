@@ -9,9 +9,9 @@ use crate::slack::{SlackMsg, SlackMsgMetadata};
 
 pub fn check_trigger_applicability(trigger: &Trigger, queue_name: &str, stat: &QueueStat) -> bool {
     if let Some(trigger_queue_name) = &trigger.data().queue {
-        trigger_queue_name == queue_name && trigger.field_name() == stat.name
+        trigger_queue_name == queue_name && trigger.stat_type() == stat.stat_type
     } else {
-        trigger.field_name() == stat.name
+        trigger.stat_type() == stat.stat_type
     }
 }
 

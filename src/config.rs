@@ -3,6 +3,8 @@ use anyhow::{Context, Result};
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
+use crate::rmq::StatType;
+
 #[derive(Deserialize, Debug)]
 pub struct Config {
     pub rabbitmq: RabbitMqConfig,
@@ -47,22 +49,13 @@ pub struct SlackConfig {
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum Trigger {
-    #[serde(rename = "consumers_total")]
     ConsumersTotal(TriggerData),
-
-    #[serde(rename = "memory_total")]
     MemoryTotal(TriggerData),
-
-    #[serde(rename = "messages_total")]
     MessagesTotal(TriggerData),
-
-    #[serde(rename = "messages_ready")]
-    ReadyMsgs(TriggerData),
-
-    #[serde(rename = "messages_unacknowledged")]
-    UnacknowledgedMsgs(TriggerData),
+    MessagesReady(TriggerData),
+    MessagesUnacknowledged(TriggerData),
 }
 
 impl Trigger {
@@ -71,18 +64,18 @@ impl Trigger {
             Trigger::ConsumersTotal(data) => data,
             Trigger::MemoryTotal(data) => data,
             Trigger::MessagesTotal(data) => data,
-            Trigger::ReadyMsgs(data) => data,
-            Trigger::UnacknowledgedMsgs(data) => data,
+            Trigger::MessagesReady(data) => data,
+            Trigger::MessagesUnacknowledged(data) => data,
         }
     }
 
-    pub fn field_name(&self) -> &'static str {
+    pub fn stat_type(&self) -> StatType {
         match *self {
-            Trigger::ConsumersTotal(_) => "consumers",
-            Trigger::MemoryTotal(_) => "memory",
-            Trigger::MessagesTotal(_) => "messages",
-            Trigger::ReadyMsgs(_) => "messages_ready",
-            Trigger::UnacknowledgedMsgs(_) => "messages_unacknowledged",
+            Trigger::ConsumersTotal(_) => StatType::ConsumersTotal,
+            Trigger::MemoryTotal(_) => StatType::MemoryTotal,
+            Trigger::MessagesTotal(_) => StatType::MessagesTotal,
+            Trigger::MessagesReady(_) => StatType::MessagesReady,
+            Trigger::MessagesUnacknowledged(_) => StatType::MessagesUnacknowledged,
         }
     }
 
@@ -91,8 +84,8 @@ impl Trigger {
             Trigger::ConsumersTotal(_) => "total number of consumers",
             Trigger::MemoryTotal(_) => "memory consumption",
             Trigger::MessagesTotal(_) => "total number of messages",
-            Trigger::ReadyMsgs(_) => "ready messages",
-            Trigger::UnacknowledgedMsgs(_) => "unacknowledged messages",
+            Trigger::MessagesReady(_) => "ready messages",
+            Trigger::MessagesUnacknowledged(_) => "unacknowledged messages",
         }
     }
 }

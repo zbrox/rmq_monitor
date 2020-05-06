@@ -11,8 +11,49 @@ pub struct QueueInfo {
 
 #[derive(Deserialize, Debug)]
 pub struct QueueStat {
-    pub name: String,
+    pub stat_type: StatType,
     pub value: u64,
+}
+
+#[derive(Deserialize, Debug, PartialEq)]
+pub enum StatType {
+    ConsumersTotal,
+    MemoryTotal,
+    MessagesTotal,
+    MessagesReady,
+    MessagesUnacknowledged,
+}
+
+impl StatType {
+    fn variants() -> &'static [StatType] {
+        &[
+            StatType::ConsumersTotal,
+            StatType::MemoryTotal,
+            StatType::MessagesTotal,
+            StatType::MessagesReady,
+            StatType::MessagesUnacknowledged,
+        ]
+    }
+
+    fn json_path(&self) -> &str {
+        match &self {
+            StatType::ConsumersTotal => "consumers",
+            StatType::MemoryTotal => "memory", 
+            StatType::MessagesTotal => "messages", 
+            StatType::MessagesReady => "messages_ready", 
+            StatType::MessagesUnacknowledged => "messages_unacknowledged", 
+        }
+    }
+
+    fn to_str(&self) -> &str {
+        match &self {
+            StatType::ConsumersTotal => "ConsumersTotal",
+            StatType::MemoryTotal => "MemoryTotal", 
+            StatType::MessagesTotal => "MessagesTotal", 
+            StatType::MessagesReady => "MessagesReady", 
+            StatType::MessagesUnacknowledged => "MessagesUnacknowledged", 
+        }
+    }
 }
 
 fn basic_auth_token(username: &str, password: &str) -> String {
@@ -59,33 +100,40 @@ pub async fn get_queue_info(
     Ok(queue_info)
 }
 
-const QUEUE_INFO_KEYS: [&str; 5] = [
-    "consumers",
-    "memory",
-    "messages",
-    "messages_ready",
-    "messages_unacknowledged",
-];
+fn get_by_path<'a>(path: &str, json_value: &'a JsonValue) -> Option<&'a JsonValue> {
+    let path_breakdown: Vec<&str> = path.split('.').collect();
+    let initial: Option<&JsonValue> = json_value.get(path_breakdown[0]);
 
-fn form_queue_info_json_values(rmq_api_queue_item: &mut JsonValue) -> Result<Vec<JsonValue>> {
+    path_breakdown
+        .iter()
+        .skip(1)
+        .try_fold(initial, |current, key| {
+            if let Some(v) = current {
+                Ok(v.get(key))
+            } else {
+                bail!("No such value found for path: {}", path);
+            }
+        })
+        .unwrap_or_else(|_| None)
+}
+
+fn build_queue_info_json_values(rmq_api_queue_item: &JsonValue) -> Result<Vec<JsonValue>> {
     let mut queue_info = Vec::new();
 
-    let object = match rmq_api_queue_item.as_object_mut() {
-        Some(object) => object,
-        None => bail!("Could not parse queue info item in RabbitMQ API response"),
-    };
-
-    for k in QUEUE_INFO_KEYS.iter() {
-        if object.contains_key(*k) {
-            queue_info.push(json!({
-                "name": object["name"],
-                "state": object["state"],
-                "stat": {
-                    "name": k,
-                    "value": object[*k]
-                }
-            }));
+    for k in StatType::variants().iter() {
+        let value = get_by_path(k.json_path(), rmq_api_queue_item);
+        if value.is_none() {
+            continue;
         }
+
+        queue_info.push(json!({
+            "name": rmq_api_queue_item.get("name"),
+            "state": rmq_api_queue_item.get("state"),
+            "stat": {
+                "stat_type": k.to_str(),
+                "value": value,
+            }
+        }));
     }
 
     Ok(queue_info)
@@ -99,7 +147,7 @@ fn preprocess_queues_info_json(json: &mut JsonValue) -> Option<JsonValue> {
 
     let queue_info: Vec<JsonValue> = list
         .iter_mut()
-        .map(|queue_item| form_queue_info_json_values(queue_item))
+        .map(|queue_item| build_queue_info_json_values(queue_item))
         .filter_map(Result::ok)
         .flatten()
         .collect();

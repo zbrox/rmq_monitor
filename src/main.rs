@@ -37,7 +37,12 @@ fn main() -> Result<()> {
     setup_panic!();
     let args = Cli::from_args();
 
-    env_logger::from_env(env_logger::Env::default().default_filter_or("info")).init();
+    let log_filter = if args.verbose {
+        "rmq_monitor=debug,surf"
+    } else {
+        "rmq_monitor=info"
+    };
+    env_logger::from_env(env_logger::Env::default().default_filter_or(log_filter)).init();
 
     let config = read_config(&args.config_path)?;
 

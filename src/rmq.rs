@@ -1,5 +1,6 @@
 use anyhow::{anyhow, bail, Context, Result};
 use serde_derive::Deserialize;
+use serde_json::{json, Value as JsonValue};
 
 #[derive(Deserialize, Debug)]
 pub struct QueueInfo {
@@ -46,7 +47,7 @@ pub async fn get_queue_info(
         Err(error) => bail!(error),
     };
 
-    let mut json: serde_json::Value = serde_json::from_str(&response_body)
+    let mut json: JsonValue = serde_json::from_str(&response_body)
         .context("Error parsing JSON from queues info API response")?;
 
     let processed_json = preprocess_queues_info_json(&mut json)
@@ -58,39 +59,50 @@ pub async fn get_queue_info(
     Ok(queue_info)
 }
 
-fn preprocess_queues_info_json(json: &mut serde_json::Value) -> Option<serde_json::Value> {
+const QUEUE_INFO_KEYS: [&str; 5] = [
+    "consumers",
+    "memory",
+    "messages",
+    "messages_ready",
+    "messages_unacknowledged",
+];
+
+fn form_queue_info_json_values(rmq_api_queue_item: &mut JsonValue) -> Result<Vec<JsonValue>> {
+    let mut queue_info = Vec::new();
+
+    let object = match rmq_api_queue_item.as_object_mut() {
+        Some(object) => object,
+        None => bail!("Could not parse queue info item in RabbitMQ API response"),
+    };
+
+    for k in QUEUE_INFO_KEYS.iter() {
+        if object.contains_key(*k) {
+            queue_info.push(json!({
+                "name": object["name"],
+                "state": object["state"],
+                "stat": {
+                    "name": k,
+                    "value": object[*k]
+                }
+            }));
+        }
+    }
+
+    Ok(queue_info)
+}
+
+fn preprocess_queues_info_json(json: &mut JsonValue) -> Option<JsonValue> {
     let list = match json.as_array_mut() {
         Some(list) => list,
         None => return None,
     };
 
-    let mut queue_info = Vec::new();
-
-    for i in list {
-        let object = match i.as_object_mut() {
-            Some(object) => object,
-            None => return None,
-        };
-
-        for k in [
-            "consumers",
-            "memory",
-            "messages",
-            "messages_ready",
-            "messages_unacknowledged",
-        ].iter() {
-            if object.contains_key(*k) {
-                queue_info.push(serde_json::json!({
-                    "name": object["name"],
-                    "state": object["state"],
-                    "stat": {
-                        "name": k,
-                        "value": object[*k]
-                    }
-                }));
-            }
-        }
-    }
+    let queue_info: Vec<JsonValue> = list
+        .iter_mut()
+        .map(|queue_item| form_queue_info_json_values(queue_item))
+        .filter_map(Result::ok)
+        .flatten()
+        .collect();
 
     if let Ok(qi) = serde_json::to_value(queue_info) {
         Some(qi)
@@ -98,3 +110,6 @@ fn preprocess_queues_info_json(json: &mut serde_json::Value) -> Option<serde_jso
         None
     }
 }
+
+#[cfg(test)]
+mod tests {}

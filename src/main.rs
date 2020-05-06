@@ -27,6 +27,10 @@ struct Cli {
     /// Path to the config.toml
     #[structopt(long = "config", short = "c", default_value = "config.toml")]
     config_path: PathBuf,
+
+    /// Print debug logs
+    #[structopt(short = "v", long = "verbose")]
+    verbose: bool,
 }
 
 fn main() -> Result<()> {

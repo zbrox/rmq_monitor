@@ -11,15 +11,15 @@ use futures::{
     stream::{futures_unordered::FuturesUnordered, StreamExt},
 };
 use human_panic::setup_panic;
+use smol_str::SmolStr;
 use std::{collections::HashMap, path::PathBuf, sync::Arc, thread, time::Duration};
 use structopt::StructOpt;
 
-use config::{RabbitMqConfig, SlackConfig, Trigger, read_config};
+use config::{read_config, RabbitMqConfig, SlackConfig, Trigger};
 use rmq::get_queue_info;
 use slack::send_slack_msg;
 use utils::{
-    build_msgs_for_trigger, get_unix_timestamp, has_msg_expired, queue_trigger_name,
-    ExpirationStatus, MsgExpirationLog,
+    build_msgs_for_trigger, get_unix_timestamp, has_msg_expired, ExpirationStatus, MsgExpirationLog,
 };
 
 #[derive(Debug, StructOpt)]
@@ -89,8 +89,7 @@ pub async fn check_loop(
             .map(|trigger| build_msgs_for_trigger(&queue_info, &trigger, &slack_config))
             .flatten()
             .filter_map(|msg| {
-                let queue_trigger_type =
-                    queue_trigger_name(&msg.metadata.queue_name, &msg.metadata.trigger_type);
+                let queue_trigger_type = (SmolStr::new(&msg.metadata.queue_name), SmolStr::new(&msg.metadata.trigger_type));
                 let current_ts = get_unix_timestamp().ok()?;
                 match has_msg_expired(
                     &mut sent_msgs_registry,

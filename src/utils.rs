@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
+use smol_str::SmolStr;
 
 use crate::config::{SlackConfig, Trigger};
 use crate::rmq::{QueueInfo, QueueStat};
@@ -20,22 +21,19 @@ pub fn get_unix_timestamp() -> Result<UnixTimestamp> {
     Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs())
 }
 
-pub fn queue_trigger_name(queue_name: &str, trigger_name: &str) -> String {
-    format!("{}:{}", queue_name, trigger_name)
-}
-
 pub enum ExpirationStatus {
     Expired,
     NotSentYet,
     NotExpired,
 }
 
-pub type QueueTriggerType = String;
-pub type MsgExpirationLog = HashMap<QueueTriggerType, UnixTimestamp>;
+pub type QueueName = SmolStr;
+pub type TriggerType = SmolStr;
+pub type MsgExpirationLog = HashMap<(QueueName, TriggerType), UnixTimestamp>;
 
 pub fn has_msg_expired(
     msg_expiration_log: &mut MsgExpirationLog,
-    queue_trigger_type: QueueTriggerType,
+    queue_trigger_type: (QueueName, TriggerType),
     current_ts: UnixTimestamp,
     expiration_in_seconds: u64,
 ) -> Result<ExpirationStatus> {

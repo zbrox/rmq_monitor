@@ -59,6 +59,8 @@ pub enum Trigger {
     MessagesTotalRate(TriggerData),
     MessagesReadyRate(TriggerData),
     MessagesUnacknowledgedRate(TriggerData),
+    MessagesPublishRate(TriggerData),
+    MessagesDeliveryRate(TriggerData),
 }
 
 impl Trigger {
@@ -72,6 +74,8 @@ impl Trigger {
             Trigger::MessagesTotalRate(data) => data,
             Trigger::MessagesReadyRate(data) => data,
             Trigger::MessagesUnacknowledgedRate(data) => data,
+            Trigger::MessagesPublishRate(data) => data,
+            Trigger::MessagesDeliveryRate(data) => data,
         }
     }
 
@@ -85,6 +89,8 @@ impl Trigger {
             Trigger::MessagesTotalRate(_) => StatType::MessagesTotalRate,
             Trigger::MessagesReadyRate(_) => StatType::MessagesReadyRate,
             Trigger::MessagesUnacknowledgedRate(_) => StatType::MessagesUnacknowledgedRate,
+            Trigger::MessagesPublishRate(_) => StatType::MessagesPublishRate,
+            Trigger::MessagesDeliveryRate(_) => StatType::MessagesDeliveryRate,
         }
     }
 
@@ -98,6 +104,8 @@ impl Trigger {
             Trigger::MessagesTotalRate(_) => "total messages per second",
             Trigger::MessagesReadyRate(_) => "ready messages per second",
             Trigger::MessagesUnacknowledgedRate(_) => "unacknowledged messages per second",
+            Trigger::MessagesPublishRate(_) => "published messages per second",
+            Trigger::MessagesDeliveryRate(_) => "delivered messages per second",
         }
     }
 }

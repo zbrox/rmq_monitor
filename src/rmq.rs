@@ -25,6 +25,8 @@ pub enum StatType {
     MessagesTotalRate,
     MessagesReadyRate,
     MessagesUnacknowledgedRate,
+    MessagesPublishRate,
+    MessagesDeliveryRate,
 }
 
 impl StatType {
@@ -38,6 +40,8 @@ impl StatType {
             StatType::MessagesTotalRate,
             StatType::MessagesReadyRate,
             StatType::MessagesUnacknowledgedRate,
+            StatType::MessagesPublishRate,
+            StatType::MessagesDeliveryRate,
         ]
     }
 
@@ -51,6 +55,8 @@ impl StatType {
             StatType::MessagesTotalRate => "messages_details.rate",
             StatType::MessagesReadyRate => "messages_ready_details.rate",
             StatType::MessagesUnacknowledgedRate => "messages_unacknowledged_details.rate",
+            StatType::MessagesPublishRate => "message_stats.publish_details.rate",
+            StatType::MessagesDeliveryRate => "message_stats.deliver_get.rate",
         }
     }
 
@@ -64,6 +70,8 @@ impl StatType {
             StatType::MessagesTotalRate => "MessagesTotalRate",
             StatType::MessagesReadyRate => "MessagesReadyRate",
             StatType::MessagesUnacknowledgedRate => "MessagesUnacknowledgedRate",
+            StatType::MessagesPublishRate => "MessagesPublishRate",
+            StatType::MessagesDeliveryRate => "MessagesDeliveryRate",
         }
     }
 }

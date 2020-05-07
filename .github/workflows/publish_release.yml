@@ -49,9 +49,6 @@ jobs:
         with:
           name: binaries
           path: binaries
-      - name: Display structure of downloaded files
-        run: ls -R
-        working-directory: binaries
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:

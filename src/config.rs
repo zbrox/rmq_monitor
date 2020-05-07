@@ -92,7 +92,7 @@ impl Trigger {
 
 #[derive(Deserialize, Debug)]
 pub struct TriggerData {
-    pub threshold: u64,
+    pub threshold: f64,
 
     #[serde(default = "default_trigger_when")]
     pub trigger_when: TriggerWhen,

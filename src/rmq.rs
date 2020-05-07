@@ -12,7 +12,7 @@ pub struct QueueInfo {
 #[derive(Deserialize, Debug)]
 pub struct QueueStat {
     pub stat_type: StatType,
-    pub value: u64,
+    pub value: f64,
 }
 
 #[derive(Deserialize, Debug, PartialEq)]

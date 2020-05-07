@@ -58,7 +58,7 @@ pub fn has_msg_expired(
     }
 }
 
-fn is_threshold_passed(stat_value: u64, trigger_data: &TriggerData) -> bool {
+fn is_threshold_passed(stat_value: f64, trigger_data: &TriggerData) -> bool {
     match trigger_data.trigger_when {
         TriggerWhen::Above => stat_value > trigger_data.threshold,
         TriggerWhen::Below => stat_value < trigger_data.threshold,

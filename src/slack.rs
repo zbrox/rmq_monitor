@@ -34,8 +34,8 @@ where
 #[derive(Debug, Clone)]
 pub struct SlackMsgMetadata {
     pub queue_name: String,
-    pub threshold: u64,
-    pub current_value: u64,
+    pub threshold: f64,
+    pub current_value: f64,
     pub trigger_type: String,
 }
 

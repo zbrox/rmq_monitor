@@ -2,7 +2,15 @@
 
 ![](https://github.com/zbrox/rmq_monitor/workflows/Build/badge.svg)
 
-This is a simple tool which monitors RabbitMQ and notifies via Slack (legacy webhooks) when certain thresholds are met.
+This is a simple tool which monitors RabbitMQ queues and notifies via Slack (legacy webhooks) when certain thresholds are met.
+
+## Installation
+
+This is published on [crates.io](https://crates.io/) so if you have `cargo` setup you can just do:
+
+```sh
+cargo install rmq_monitor
+```
 
 ## Options
 
@@ -14,7 +22,31 @@ This is a simple tool which monitors RabbitMQ and notifies via Slack (legacy web
 
 The tool uses a [TOML](https://github.com/toml-lang/toml) config file. If you don't pass any `--config` argument it will look for a `config.toml` in the working directory.
 
-There's an example included in this repo called `config_sample.toml`.
+### Available triggers
+
+Triggers can be activated by a value either being above or below the given threshold. The default is above, but if you add `trigger_when = "below"` to the trigger configuration it will be triggered when the given value falls below what you specify.
+
+Here's a sample trigger definition to put in a config.toml file:
+
+```toml
+[[triggers]]
+type = "messages_ready"
+threshold = 10000
+queue = "sent_images"
+```
+
+This trigger will activate and send a message when a queue called `sent_images` goes above 10000 ready messages.
+
+Here are the currently available triggers and their type field. If you put an invalid type for a trigger `rmq_monitor` won't start up and print out the error due to inability to parse the config.
+
+- Total number of consumers (`type = "consumers_total"`) - How many consumers are currently consuming from the queue
+- Total memory (`type = "memory_total"`) - Total memory used by the queue
+- Total number of messages (`type = "messages_total"`) - The total number of messages currently on the queue
+- Number of ready messages (`type = "messages_ready"`) - The number of messages available to consumers, ready to be delivered
+- Number of unacknowledged messages (`type = "messages_unacknowledged"`) - The number of messages delivered to a consumer but not yet acked
+- Total rate of messages (`type = "messages_total_rate"`) - The rate at which messages move in and out of the queue *per second*
+- Rate of ready messages (`type = "messages_ready_rate"`) - The rate at which ready messages change
+- Rate of unacknowledged messages (`type = "messages_unacknowledged_rate"`) - The rate at which unacknowledged messages change
 
 ### Docker image
 

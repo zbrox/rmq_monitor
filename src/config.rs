@@ -95,9 +95,9 @@ impl Trigger {
             Trigger::MessagesTotal(_) => "total number of messages",
             Trigger::MessagesReady(_) => "ready messages",
             Trigger::MessagesUnacknowledged(_) => "unacknowledged messages",
-            Trigger::MessagesTotalRate(_) => "total message rate",
-            Trigger::MessagesReadyRate(_) => "ready message rate",
-            Trigger::MessagesUnacknowledgedRate(_) => "unacknowledged message rate",
+            Trigger::MessagesTotalRate(_) => "total messages per second",
+            Trigger::MessagesReadyRate(_) => "ready messages per second",
+            Trigger::MessagesUnacknowledgedRate(_) => "unacknowledged messages per second",
         }
     }
 }

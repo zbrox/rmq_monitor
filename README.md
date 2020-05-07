@@ -22,7 +22,7 @@ cargo install rmq_monitor
 
 The tool uses a [TOML](https://github.com/toml-lang/toml) config file. If you don't pass any `--config` argument it will look for a `config.toml` in the working directory.
 
-### Available triggers
+### Triggers
 
 Triggers can be activated by a value either being above or below the given threshold. The default is above, but if you add `trigger_when = "below"` to the trigger configuration it will be triggered when the given value falls below what you specify.
 
@@ -37,18 +37,20 @@ queue = "sent_images"
 
 This trigger will activate and send a message when a queue called `sent_images` goes above 10000 ready messages.
 
+### Available triggers
+
 Here are the currently available triggers and their type field. If you put an invalid type for a trigger `rmq_monitor` won't start up and print out the error due to inability to parse the config.
 
-- Total number of consumers (`type = "consumers_total"`) - How many consumers are currently consuming from the queue
-- Total memory (`type = "memory_total"`) - Total memory used by the queue
-- Total number of messages (`type = "messages_total"`) - The total number of messages currently on the queue
-- Number of ready messages (`type = "messages_ready"`) - The number of messages available to consumers, ready to be delivered
-- Number of unacknowledged messages (`type = "messages_unacknowledged"`) - The number of messages delivered to a consumer but not yet acked
-- Total rate of messages (`type = "messages_total_rate"`) - The rate (*per second*) at which messages move in and out of the queue
-- Rate of ready messages (`type = "messages_ready_rate"`) - The rate (*per second*) at which ready messages change
-- Rate of unacknowledged messages (`type = "messages_unacknowledged_rate"`) - The rate (*per second*) at which unacknowledged messages change
-- Publishing rate (`type = "messages_publish_rate"`) - The rate (*per second*) at which messages are published on the queue
-- Delivery rate (`type = "messages_delivery_rate"`) - The rate (*per second*) at which messages are delivered by the queue
+- **Total number of consumers** (`type = "consumers_total"`) - How many consumers are currently consuming from the queue
+- **Total memory** (`type = "memory_total"`) - Total memory used by the queue
+- **Total number of messages** (`type = "messages_total"`) - The total number of messages currently on the queue
+- **Number of ready messages** (`type = "messages_ready"`) - The number of messages available to consumers, ready to be delivered
+- **Number of unacknowledged messages** (`type = "messages_unacknowledged"`) - The number of messages delivered to a consumer but not yet acked
+- **Total rate of messages** (`type = "messages_total_rate"`) - The rate (*per second*) at which messages move in and out of the queue
+- **Rate of ready messages** (`type = "messages_ready_rate"`) - The rate (*per second*) at which ready messages change
+- **Rate of unacknowledged messages** (`type = "messages_unacknowledged_rate"`) - The rate (*per second*) at which unacknowledged messages change
+- **Publishing rate** (`type = "messages_publish_rate"`) - The rate (*per second*) at which messages are published on the queue
+- **Delivery rate** (`type = "messages_delivery_rate"`) - The rate (*per second*) at which messages are delivered by the queue
 
 ### Docker image
 

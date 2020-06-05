@@ -5,6 +5,10 @@
 FROM clux/muslrust AS build
 WORKDIR /usr/src
 
+# Update CA Certificates
+RUN apt update -y && apt install -y ca-certificates
+RUN update-ca-certificates
+
 # Build dependencies and rely on cache if Cargo.toml
 # or Cargo.lock haven't changed
 RUN USER=root cargo new rmq_monitor
@@ -19,6 +23,7 @@ RUN cargo install --target x86_64-unknown-linux-musl --path .
 # Copy the statically-linked binary into a scratch container.
 FROM scratch
 
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /root/.cargo/bin/rmq_monitor .
 USER 1000
 

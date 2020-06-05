@@ -75,7 +75,7 @@ pub async fn check_loop(
 
     let mut sent_msgs_registry: MsgExpirationLog = HashMap::new();
 
-    while let Some(_) = interval.next().await {
+    while interval.next().await.is_some() {
         log::info!(
             "Checking queue info at {}://{}:{}",
             &rmq_config.protocol,

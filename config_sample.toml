@@ -20,7 +20,7 @@ icon_url = "https://example.com/image.png"
 # icon_emoji=":bowtie:" # you can also use icon_emoji if you're not using icon_url, reference icon emojis at http://emoji-cheat-sheet.com
 
 [[triggers]]
-# Options: consumers_total, memory_total, messages_total, messages_ready, messages_unacknowledged, messages_total_rate, messages_ready_rate, messages_unacknowledged_rate, messages_publish_rate, messages_delivery_rate
+# Options: consumers_total, memory_total, messages_total, messages_ready, messages_unacknowledged, messages_redelivered, messages_total_rate, messages_ready_rate, messages_unacknowledged_rate, messages_publish_rate, messages_delivery_rate, messages_redeliver_rate
 type = "messages_ready" # what value will be observed to pass the threshold
 threshold = 10000
 queue = "the_queue_name" # this is optional, if ommitted it will be a rule valid for all queues

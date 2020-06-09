@@ -46,11 +46,13 @@ Here are the currently available triggers and their type field. If you put an in
 - **Total number of messages** (`type = "messages_total"`) - The total number of messages currently on the queue
 - **Number of ready messages** (`type = "messages_ready"`) - The number of messages available to consumers, ready to be delivered
 - **Number of unacknowledged messages** (`type = "messages_unacknowledged"`) - The number of messages delivered to a consumer but not yet acked
+- **Number of redelivered messages** (`type = "messages_redelivered"`) - The number of redelivered messages (due to being rejected)
 - **Total rate of messages** (`type = "messages_total_rate"`) - The rate (*per second*) at which messages move in and out of the queue
 - **Rate of ready messages** (`type = "messages_ready_rate"`) - The rate (*per second*) at which ready messages change
 - **Rate of unacknowledged messages** (`type = "messages_unacknowledged_rate"`) - The rate (*per second*) at which unacknowledged messages change
 - **Publishing rate** (`type = "messages_publish_rate"`) - The rate (*per second*) at which messages are published on the queue
 - **Delivery rate** (`type = "messages_delivery_rate"`) - The rate (*per second*) at which messages are delivered by the queue
+- **Redelivery rate** (`type = "messages_redeliver_rate"`) - The rate (*per second*) at which messages are redelivered to the queue (because of rejection)
 
 ### Docker image
 

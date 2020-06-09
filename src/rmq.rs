@@ -56,7 +56,7 @@ impl StatType {
             StatType::MessagesReadyRate => "messages_ready_details.rate",
             StatType::MessagesUnacknowledgedRate => "messages_unacknowledged_details.rate",
             StatType::MessagesPublishRate => "message_stats.publish_details.rate",
-            StatType::MessagesDeliveryRate => "message_stats.deliver_get.rate",
+            StatType::MessagesDeliveryRate => "message_stats.deliver_get_details.rate",
         }
     }
 

@@ -1,7 +1,6 @@
-# Need to build with musl, this image comes with the musl target
-# and openssl linked against musl
-# It doesn't have 1.43.0 so we gonna use the default latest
-# which I think uses nightly
+# This image is made for building static binaries linked against musl
+# It includes OpenSSL compiled against musl-gcc
+# I think clux/muslrust:latest uses nightly
 FROM clux/muslrust AS build
 WORKDIR /usr/src
 
@@ -16,13 +15,14 @@ WORKDIR /usr/src/rmq_monitor
 COPY Cargo.toml Cargo.lock ./
 RUN cargo build --target x86_64-unknown-linux-musl --release
 
-# Copy the source and build the application.
+# Copy the source and build the application
 COPY src ./src
 RUN cargo install --target x86_64-unknown-linux-musl --path .
 
-# Copy the statically-linked binary into a scratch container.
+# Second stage
 FROM scratch
 
+# Copy over from first stage the statically-linked binary and CA certificates
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /root/.cargo/bin/rmq_monitor .
 USER 1000

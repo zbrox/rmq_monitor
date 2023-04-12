@@ -1,6 +1,8 @@
 use anyhow::{anyhow, bail, Context, Result};
 use serde_derive::Deserialize;
 use serde_json::{json, Value as JsonValue};
+use base64::engine::Engine as _;
+use base64::engine::general_purpose::STANDARD as Base64StandardEngine;
 
 #[derive(Deserialize, Debug)]
 pub struct QueueInfo {
@@ -87,7 +89,7 @@ impl StatType {
 fn basic_auth_token(username: &str, password: &str) -> String {
     let combined = format!("{}:{}", username, password);
     let octet = combined.as_bytes();
-    base64::encode(octet)
+    Base64StandardEngine.encode(octet)
 }
 
 pub async fn get_queue_info(

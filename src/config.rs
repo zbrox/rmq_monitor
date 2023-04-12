@@ -1,5 +1,5 @@
-use serde_derive::Deserialize;
 use anyhow::{Context, Result};
+use serde_derive::Deserialize;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
@@ -140,12 +140,8 @@ fn default_trigger_when() -> TriggerWhen {
 }
 
 pub fn read_config(path: &PathBuf) -> Result<Config> {
-    let config_contents: String = read_to_string(path).with_context(|| {
-        format!(
-            "Could not read config {}",
-            path.as_path().display()
-        )
-    })?;
+    let config_contents: String = read_to_string(path)
+        .with_context(|| format!("Could not read config {}", path.as_path().display()))?;
 
     let config: Config = toml::from_str(&config_contents).context("Could not parse TOML config")?;
     Ok(config)

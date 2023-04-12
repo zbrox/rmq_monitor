@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
+use smol_str::SmolStr;
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
-use smol_str::SmolStr;
 
 use crate::config::{SlackConfig, Trigger, TriggerData, TriggerWhen};
 use crate::rmq::{QueueInfo, QueueStat};
@@ -74,19 +74,17 @@ pub fn build_msgs_for_trigger(
         .iter()
         .filter(|qi| check_trigger_applicability(trigger, &qi.name, &qi.stat))
         .filter(|qi| is_threshold_passed(qi.stat.value, trigger.data()))
-        .map(|qi| {
-            SlackMsg {
-                username: slack_config.screen_name.clone(),
-                channel: format!("#{}", &slack_config.channel),
-                icon_url: slack_config.icon_url.clone(),
-                icon_emoji: slack_config.icon_emoji.clone(),
-                metadata: SlackMsgMetadata {
-                    queue_name: qi.name.clone(),
-                    threshold: trigger.data().threshold,
-                    current_value: qi.stat.value,
-                    trigger_type: trigger.name().into(),
-                },
-            }
+        .map(|qi| SlackMsg {
+            username: slack_config.screen_name.clone(),
+            channel: format!("#{}", &slack_config.channel),
+            icon_url: slack_config.icon_url.clone(),
+            icon_emoji: slack_config.icon_emoji.clone(),
+            metadata: SlackMsgMetadata {
+                queue_name: qi.name.clone(),
+                threshold: trigger.data().threshold,
+                current_value: qi.stat.value,
+                trigger_type: trigger.name().into(),
+            },
         })
         .collect();
 

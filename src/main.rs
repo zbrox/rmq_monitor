@@ -19,8 +19,8 @@ use config::{read_config, RabbitMqConfig, SlackConfig, Trigger};
 use rmq::get_queue_info;
 use slack::send_slack_msg;
 use utils::{
-    build_msgs_for_trigger, get_unix_timestamp, has_msg_expired, ExpirationStatus, MsgExpirationLog,
-    TriggerType, QueueName,
+    build_msgs_for_trigger, get_unix_timestamp, has_msg_expired, ExpirationStatus,
+    MsgExpirationLog, QueueName, TriggerType,
 };
 
 #[derive(Debug, StructOpt)]

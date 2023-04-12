@@ -1,8 +1,8 @@
 use anyhow::{anyhow, bail, Context, Result};
+use base64::engine::general_purpose::STANDARD as Base64StandardEngine;
+use base64::engine::Engine as _;
 use serde_derive::Deserialize;
 use serde_json::{json, Value as JsonValue};
-use base64::engine::Engine as _;
-use base64::engine::general_purpose::STANDARD as Base64StandardEngine;
 
 #[derive(Deserialize, Debug)]
 pub struct QueueInfo {
@@ -54,16 +54,16 @@ impl StatType {
     fn json_path(&self) -> &str {
         match &self {
             StatType::ConsumersTotal => "consumers",
-            StatType::MemoryTotal => "memory", 
-            StatType::MessagesTotal => "messages", 
-            StatType::MessagesReady => "messages_ready", 
-            StatType::MessagesUnacknowledged => "messages_unacknowledged", 
+            StatType::MemoryTotal => "memory",
+            StatType::MessagesTotal => "messages",
+            StatType::MessagesReady => "messages_ready",
+            StatType::MessagesUnacknowledged => "messages_unacknowledged",
             StatType::MessagesTotalRate => "messages_details.rate",
             StatType::MessagesReadyRate => "messages_ready_details.rate",
             StatType::MessagesUnacknowledgedRate => "messages_unacknowledged_details.rate",
             StatType::MessagesPublishRate => "message_stats.publish_details.rate",
             StatType::MessagesDeliveryRate => "message_stats.deliver_get_details.rate",
-            StatType::MessagesRedelivered => "message_stats.redeliver", 
+            StatType::MessagesRedelivered => "message_stats.redeliver",
             StatType::MessagesRedeliverRate => "message_stats.redeliver_details.rate",
         }
     }
@@ -71,10 +71,10 @@ impl StatType {
     fn to_str(&self) -> &str {
         match &self {
             StatType::ConsumersTotal => "ConsumersTotal",
-            StatType::MemoryTotal => "MemoryTotal", 
-            StatType::MessagesTotal => "MessagesTotal", 
-            StatType::MessagesReady => "MessagesReady", 
-            StatType::MessagesUnacknowledged => "MessagesUnacknowledged", 
+            StatType::MemoryTotal => "MemoryTotal",
+            StatType::MessagesTotal => "MessagesTotal",
+            StatType::MessagesReady => "MessagesReady",
+            StatType::MessagesUnacknowledged => "MessagesUnacknowledged",
             StatType::MessagesTotalRate => "MessagesTotalRate",
             StatType::MessagesReadyRate => "MessagesReadyRate",
             StatType::MessagesUnacknowledgedRate => "MessagesUnacknowledgedRate",
@@ -143,7 +143,7 @@ fn get_by_path<'a>(path: &str, json_value: &'a JsonValue) -> Option<&'a JsonValu
                 bail!("No such value found for path: {}", path);
             }
         })
-        .unwrap_or( None) // TODO: at least log the error
+        .unwrap_or(None) // TODO: at least log the error
 }
 
 fn build_queue_info_json_values(rmq_api_queue_item: &JsonValue) -> Result<Vec<JsonValue>> {

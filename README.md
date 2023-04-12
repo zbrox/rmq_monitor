@@ -1,12 +1,14 @@
 # RabbitMQ monitor
 
-![Build badge](https://github.com/zbrox/rmq_monitor/workflows/Build/badge.svg)
+[![Build badge](https://github.com/zbrox/rmq_monitor/workflows/Build/badge.svg)](https://github.com/zbrox/rmq_monitor/actions/workflows/build.yml)
+[![Crates.io badge](https://img.shields.io/crates/v/rmq_monitor?logo=rust)](https://crates.io/crates/rmq_monitor)
+[![Docker Hub badge](https://img.shields.io/docker/v/zbrox/rmq_monitor?color=blue&logo=docker)](https://hub.docker.com/r/zbrox/rmq_monitor)
 
 This is a simple tool which monitors RabbitMQ queues and notifies via Slack (legacy webhooks) when certain thresholds are met.
 
 ## Installation
 
-This is published on [crates.io](https://crates.io/) so if you have `cargo` setup you can just do:
+This is [published on crates.io](https://crates.io/crates/rmq_monitor) so if you have `cargo` setup you can just do:
 
 ```sh
 cargo install rmq_monitor
@@ -56,7 +58,7 @@ Here are the currently available triggers and their type field. If you put an in
 
 ### Docker image
 
-There's a minimal Docker image [published on Docker hub](https://hub.docker.com/r/zbrox/rmq_monitor). The size of the image is only 11Mb.
+There's a minimal Docker image [published on Docker hub](https://hub.docker.com/r/zbrox/rmq_monitor). The size of the image is only around 5Mb (compressed size 1.13 MB).
 
 To use it you only need to mount a volume with your config file. The container will be looking for the config file in `/config/config.toml` so mount it there. Example:
 
@@ -70,4 +72,4 @@ or if you're running in kubernetes and it's easier to mount the whole folder:
 docker run -it -v (pwd)/where_i_keep_configs:/config --rm zbrox/rmq_monitor:latest
 ```
 
-Obviously in this case you have to name the config file in that folder also `config.toml`. Later I'll add a container variable to be able to change that name as well.
+Obviously in this case you have to name the config file in that folder also `config.toml`. Later a container variable can be added to be able to change that name as well.

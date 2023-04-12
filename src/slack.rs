@@ -40,7 +40,7 @@ pub struct SlackMsgMetadata {
 }
 
 pub async fn send_slack_msg(webhook_url: &str, msg: Arc<SlackMsg>) -> Result<()> {
-    let mut response = match surf::post(webhook_url).body_json(&msg.as_ref())?.await {
+    let mut response = match surf::post(webhook_url).body_json(&msg.as_ref()).map_err(anyhow::Error::msg)?.await {
         Ok(response) => response,
         Err(error) => bail!(error),
     };

@@ -100,7 +100,7 @@ pub async fn get_queue_info(
     let url = format!("{}://{}:{}/api/queues", protocol, host, port);
     let token = basic_auth_token(username, password);
     let mut response = match surf::get(url)
-        .set_header("Authorization", format!("Basic {}", token))
+        .header("Authorization", format!("Basic {}", token))
         .await
     {
         Ok(response) => response,

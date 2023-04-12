@@ -43,7 +43,8 @@ fn main() -> Result<()> {
     } else {
         "rmq_monitor=info"
     };
-    env_logger::from_env(env_logger::Env::default().default_filter_or(log_filter)).init();
+    let log_env = env_logger::Env::default().default_filter_or(log_filter);
+    env_logger::Builder::from_env(log_env).init();
 
     let config = read_config(&args.config_path)?;
 

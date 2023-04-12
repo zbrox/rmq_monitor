@@ -97,8 +97,7 @@ pub async fn check_loop(
 
         triggers
             .iter()
-            .map(|trigger| build_msgs_for_trigger(&queue_info, &trigger, &slack_config))
-            .flatten()
+            .flat_map(|trigger| build_msgs_for_trigger(&queue_info, trigger, &slack_config))
             .filter_map(|msg| {
                 let queue_trigger_type: (QueueName, TriggerType) = (SmolStr::new(&msg.metadata.queue_name), SmolStr::new(&msg.metadata.trigger_type));
                 let current_ts = get_unix_timestamp().ok()?;

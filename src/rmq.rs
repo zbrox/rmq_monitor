@@ -137,14 +137,13 @@ fn get_by_path<'a>(path: &str, json_value: &'a JsonValue) -> Option<&'a JsonValu
     path_breakdown
         .iter()
         .skip(1)
-        .try_fold(initial, |current, key| {
-            if let Some(v) = current {
-                Ok(v.get(key))
-            } else {
+        .try_fold(initial, |current, key| match current {
+            Some(v) => Ok(v.get(key)),
+            None => {
                 bail!("No such value found for path: {}", path);
             }
         })
-        .unwrap_or_else(|_| None)
+        .unwrap_or( None) // TODO: at least log the error
 }
 
 fn build_queue_info_json_values(rmq_api_queue_item: &JsonValue) -> Result<Vec<JsonValue>> {

@@ -143,7 +143,7 @@ pub fn read_config(path: &PathBuf) -> Result<Config> {
     let config_contents: String = read_to_string(path).with_context(|| {
         format!(
             "Could not read config {}",
-            path.as_path().display().to_string()
+            path.as_path().display()
         )
     })?;
 

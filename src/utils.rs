@@ -75,7 +75,7 @@ pub fn build_msgs_for_trigger(
         .filter(|qi| check_trigger_applicability(trigger, &qi.name, &qi.stat))
         .filter(|qi| is_threshold_passed(qi.stat.value, trigger.data()))
         .map(|qi| {
-            Some(SlackMsg {
+            SlackMsg {
                 username: slack_config.screen_name.clone(),
                 channel: format!("#{}", &slack_config.channel),
                 icon_url: slack_config.icon_url.clone(),
@@ -86,9 +86,8 @@ pub fn build_msgs_for_trigger(
                     current_value: qi.stat.value,
                     trigger_type: trigger.name().into(),
                 },
-            })
+            }
         })
-        .filter_map(|v| v)
         .collect();
 
     msgs
